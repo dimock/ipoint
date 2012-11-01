@@ -1,0 +1,48 @@
+#pragma once
+
+#include <QWidget>
+#include <QPoint>
+#include <QMouseEvent>
+#include <QResizeEvent>
+#include <QPaintEvent>
+#include "ipoint_alg.h"
+
+class ViewWindow : public QWidget
+{
+  Q_OBJECT
+
+public:
+
+  ViewWindow(QWidget * parent);
+  ~ViewWindow();
+
+  void reset();
+
+signals:
+
+  void mouseMoved(const QPoint & pos);
+
+protected:
+
+  // events
+  void mouseMoveEvent(QMouseEvent * );
+  void mouseReleaseEvent(QMouseEvent * );
+  void resizeEvent(QResizeEvent *);
+  void paintEvent(QPaintEvent *);
+
+private slots:
+
+  void onPosChanged(const QPoint &);
+
+private:
+  void draw();
+  void recalcScreen();
+  bool isOverFirstPt(const Vec2f & p);
+
+  IntrusionPointAlgorithm alg_;
+  Screen2f screen_;
+  QPoint curPt_;
+
+  const double distToPt_;
+  const int radiusPt_;
+};
