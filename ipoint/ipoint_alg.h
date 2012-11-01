@@ -5,28 +5,9 @@
 
 class Triangulator;
 
-struct Triangle
-{
-  Triangle()
-  {
-    v[0] = v[1] = v[2] = -1;
-  }
-
-  Triangle(int v0, int v1, int v2)
-  {
-    v[0] = v0;
-    v[1] = v1;
-    v[2] = v2;
-  }
-
-  int v[3];
-};
 
 class IntrusionPointAlgorithm
 {
-public:
-
-  typedef std::vector<Vec2f> Points2f;
 
 public:
 
@@ -57,7 +38,8 @@ private:
   Vec2f cursorPt_;
   Rect2f rect_;
   bool closed_;
-  std::vector<Triangle> tris_;
+  Triangles tris_;
+  size_t pointCount_;
 
   void recalc();
 

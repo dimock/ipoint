@@ -1,16 +1,17 @@
 #include "ipoint_alg.h"
 #include "imath.h"
+#include "delaunay.h"
 
 using namespace std;
 
 
 class Triangulator
 {
-  const IntrusionPointAlgorithm::Points2f & points_;
+  Points2f & points_;
 
 public:
 
-  Triangulator(const IntrusionPointAlgorithm::Points2f & points) :
+  Triangulator(Points2f & points) :
       points_(points)
   {
     cw();
@@ -30,22 +31,22 @@ private:
 
 void Triangulator::cw()
 {
-  cw_ = false;
-  if ( points_.size() < 3 )
-    return;
-  double s = 0;
-  Vec3f p0(points_[0].x, points_[0].y, 0);
-  for (size_t i = 1; i < points_.size(); ++i)
-  {
-    size_t j = i+1;
-    if ( j >= points_.size() )
-      break;
-    Vec3f p1(points_[i].x, points_[i].y, 0);
-    Vec3f p2(points_[j].x, points_[j].y, 0);
-    Vec3f v = (p1 - p0) ^ (p2 - p0);
-    s += v.z;
-  }
-  cw_ = s < 0;
+  cw_ = ::cw(points_);
+  //if ( points_.size() < 3 )
+  //  return;
+  //double s = 0;
+  //Vec3f p0(points_[0].x, points_[0].y, 0);
+  //for (size_t i = 1; i < points_.size(); ++i)
+  //{
+  //  size_t j = i+1;
+  //  if ( j >= points_.size() )
+  //    break;
+  //  Vec3f p1(points_[i].x, points_[i].y, 0);
+  //  Vec3f p2(points_[j].x, points_[j].y, 0);
+  //  Vec3f v = (p1 - p0) ^ (p2 - p0);
+  //  s += v.z;
+  //}
+  //cw_ = s < 0;
 }
 
 bool Triangulator::triangulate(vector<Triangle> & tris)
@@ -195,13 +196,14 @@ bool Triangulator::triangulate(vector<int> & indices, vector<Triangle> & tris)
 }
 
 IntrusionPointAlgorithm::IntrusionPointAlgorithm() :
-  closed_(false)
+  closed_(false), pointCount_(0)
 {
 }
 
 void IntrusionPointAlgorithm::reset()
 {
   closed_ = false;
+  pointCount_ = 0;
   points_.clear();
   rect_.makeInvalid();
   tris_.clear();
@@ -222,7 +224,8 @@ void IntrusionPointAlgorithm::addPoint(const Vec2f & pt, bool close)
   }
   else
   {
-    points_.push_back(pt);
+      points_.push_back(pt);
+      pointCount_ = points_.size();
   }
   recalc();
 }
@@ -238,7 +241,7 @@ bool IntrusionPointAlgorithm::haveSelfIsect(const Vec2f & q1, Vec2f & r) const
     return false;
   double p0dist = (q1-points_.front()).vecmod();
   bool to1stpt = false;
-  if ( p0dist < 1e-3 )
+  if ( p0dist < 1e-2 )
     to1stpt = true;
   const Vec2f & q0 = points_.back();
   for (size_t i = 0; i < points_.size()-2; ++i)
@@ -290,7 +293,7 @@ void IntrusionPointAlgorithm::insertPoint(size_t idx, const Vec2f & pt)
 
 size_t IntrusionPointAlgorithm::pointsCount() const
 {
-  return points_.size();
+  return pointCount_;
 }
 
 Vec2f & IntrusionPointAlgorithm::operator [] (size_t idx)
@@ -327,18 +330,21 @@ bool IntrusionPointAlgorithm::triangulate()
   if ( tris_.size() > 0 )
     return true;
 
-  Triangulator triangulator(points_);
-  return triangulator.triangulate(tris_);
+  //Triangulator triangulator(points_);
+  //return triangulator.triangulate(tris_);
+
+  DelanayTriangulator dtr(points_);
+  return dtr.triangulate(tris_);
 }
 
 bool IntrusionPointAlgorithm::triangulation(std::vector<Triangle> *& tris)
 {
-  if ( !closed_ )
-  {
-    tris_.clear();
-    if ( !triangulate() )
-      return false;
-  }
+  //if ( !closed_ )
+  //{
+  //  tris_.clear();
+  //  if ( !triangulate() )
+  //    return false;
+  //}
 
   tris = &tris_;
   return true;

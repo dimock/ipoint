@@ -10,6 +10,8 @@
 #pragma once
 
 #include <math.h>
+#include <vector>
+#include <set>
 
 /************************************************************************/
 /* 2D Vector                                                            */
@@ -218,3 +220,77 @@ struct Vec3f
         return Vec3f(1.0f/x, 1.0f/y, 1.0f/z);
     }
 };
+
+
+struct Triangle
+{
+  Triangle()
+  {
+    v[0] = v[1] = v[2] = -1;
+  }
+
+  Triangle(int v0, int v1, int v2)
+  {
+    v[0] = v0;
+    v[1] = v1;
+    v[2] = v2;
+  }
+
+  union
+  {
+    int v[3];
+    struct
+    {
+      int x, y, z;
+    };
+  };
+};
+
+
+class OrEdge
+{
+public:
+
+  OrEdge() : org_(-1), dst_(-1)
+  {
+  }
+
+  OrEdge(int o, int d) : org_(o), dst_(d)
+  {
+  }
+
+  void flip()
+  {
+    std::swap(org_, dst_);
+  }
+
+  bool operator < (const OrEdge & other) const
+  {
+    return org_ < other.org_ || org_ == other.org_ && dst_ < other.dst_;
+  }
+
+  bool operator == (const OrEdge & other) const
+  {
+    return org_ == other.org_ && dst_ == other.dst_;
+  }
+
+  int org() const
+  {
+    return org_;
+  }
+
+  int dst() const
+  {
+    return dst_;
+  }
+
+private:
+
+  int org_, dst_;
+
+};
+
+typedef std::vector<Vec2f> Points2f;
+typedef std::vector<Triangle> Triangles;
+typedef std::set<OrEdge> OrEdges;
+

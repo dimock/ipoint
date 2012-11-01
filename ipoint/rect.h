@@ -40,8 +40,8 @@ struct Rect2f
 
   void makeInvalid()
   {
-    vmin.x = vmin.y = vmin.x = FLT_MAX;
-    vmax.x = vmax.y = vmax.x = -FLT_MAX;
+    vmin.x = vmin.y = vmin.x = DBL_MAX;
+    vmax.x = vmax.y = vmax.x = -DBL_MAX;
   }
 
   void set(const Vec2f & orig, const Vec2f & dim)
