@@ -3,7 +3,7 @@
 
 static const double err = 1e-20;
 
-bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, const Vec3f & q1, Vec3f & r)
+bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, const Vec3f & q1, Vec3f & r, double & dist)
 {
   Vec3f rp = p1 - p0;
   Vec3f rq = q1 - q0;
@@ -12,10 +12,10 @@ bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, co
   if ( n.length() < err*lpq )
     return false;
   n.norm();
-  double d = n*(q0-p0);
-  Vec3f g0 = q0 - n*d;
-  Vec3f g1 = q1 - n*d;
-  d = rp.x*rq.y-rp.y*rq.x;
+  dist = n*(q0-p0);
+  Vec3f g0 = q0 - n*dist;
+  Vec3f g1 = q1 - n*dist;
+  double d = rp.x*rq.y-rp.y*rq.x;
   if ( fabs(d) > err*lpq )
   {
     double t = (-p0.x*rq.y+g0.x*rq.y+rq.x*p0.y-rq.x*g0.y)/d; // p
@@ -36,16 +36,16 @@ bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, co
   return true;
 }
 
-bool iMath::edge_halfline_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, const Vec3f & rq, Vec3f & r)
+bool iMath::edge_halfline_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, const Vec3f & rq, Vec3f & r, double & dist)
 {
   Vec3f rp = p1 - p0;
   double lpq = rp.length()+rq.length();
   Vec3f n = rp ^ rq;
   if ( n.length() < err*lpq )
     return false;
-  double d = n*(q-p0);
-  Vec3f g = q-n*d;
-  d = rp.x*rq.y-rp.y*rq.x;
+  dist = n*(q-p0);
+  Vec3f g = q-n*dist;
+  double d = rp.x*rq.y-rp.y*rq.x;
   if ( fabs(d) > err*lpq )
   {
     double t = (-p0.x*rq.y+g.x*rq.y+rq.x*p0.y-rq.x*g.y)/d; // p
@@ -66,15 +66,15 @@ bool iMath::edge_halfline_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f 
   return true;
 }
 
-bool iMath::line_line_isect(const Vec3f & p, const Vec3f & rp, const Vec3f & q, const Vec3f & rq, Vec3f & r)
+bool iMath::line_line_isect(const Vec3f & p, const Vec3f & rp, const Vec3f & q, const Vec3f & rq, Vec3f & r, double & dist)
 {
   double lpq = rp.length() + rq.length();
   Vec3f n = rp ^ rq;
   if ( n.length() < err*lpq )
     return false;
-  double d = n*(q-p);
-  Vec3f g = q-n*d;
-  d = rp.x*rq.y-rp.y*rq.x;
+  dist = n*(q-p);
+  Vec3f g = q-n*dist;
+  double d = rp.x*rq.y-rp.y*rq.x;
   if ( fabs(d) > err*lpq )
   {
     double t = (-p.x*rq.y+g.x*rq.y+rq.x*p.y-rq.x*g.y)/d; // p

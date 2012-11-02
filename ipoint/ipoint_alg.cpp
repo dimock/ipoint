@@ -230,7 +230,8 @@ bool IntrusionPointAlgorithm::haveSelfIsect(const Vec3f & q1, Vec3f & r) const
   {
     const Vec3f & p0 = points_[i];
     const Vec3f & p1 = points_[i+1];
-    if ( !edges_isect(p0, p1, q0, q1, r) )
+    double dist;
+    if ( !edges_isect(p0, p1, q0, q1, r, dist) )
       continue;
     if ( i == 0 && to1stpt )
       continue;

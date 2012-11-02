@@ -44,7 +44,7 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 void DelanayTriangulator::addPoints()
 {
   srand(time(0));
-  size_t n = boundaryN_*sqrtf(boundaryN_);
+  size_t n = boundaryN_*boundaryN_;
 
   Rect3f rect;
   for (size_t i = 0; i < boundaryN_; ++i)
@@ -75,7 +75,8 @@ bool DelanayTriangulator::pointInside(const Vec3f & q) const
     const Vec3f & p1 = points_[(i+1) % boundaryN_];
 
     Vec3f r;
-    if ( edge_halfline_isect(p0, p1, q, rq, r) )
+    double dist;
+    if ( edge_halfline_isect(p0, p1, q, rq, r, dist) )
       num++;
   }
 
@@ -116,7 +117,8 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
       rq.y = -rq.y;
 
       Vec3f r;
-      if ( !line_line_isect(p, rp, q, rq, r) )
+      double dist;
+      if ( !line_line_isect(p, rp, q, rq, r, dist) )
         continue;
 
       double t = dist_to_line(p0, p1, r, outside);
@@ -136,6 +138,7 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
 
 bool DelanayTriangulator::isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i0, size_t i1) const
 {
+  double lp = (p0 - p1).length();
   for (size_t i = 0; i < boundaryN_; ++i)
   {
     size_t j = (i+1) % boundaryN_;
@@ -146,7 +149,8 @@ bool DelanayTriangulator::isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i
     const Vec3f & q1 = points_[j];
 
     Vec3f r;
-    if ( edges_isect(p0, p1, q0, q1, r) )
+    double dist;
+    if ( edges_isect(p0, p1, q0, q1, r, dist) && dist < lp )
       return true;
   }
   return false;
