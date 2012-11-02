@@ -3,10 +3,12 @@
 #include <time.h>
 #include <algorithm>
 
-DelanayTriangulator::DelanayTriangulator(Points2f & points) :
+using namespace iMath;
+
+DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   points_(points), boundaryN_(points.size())
 {
-  if ( !cw(points_) )
+  if ( !iMath::cw(points_) )
     std::reverse(points_.begin(), points_.end());
 }
 
@@ -44,7 +46,7 @@ void DelanayTriangulator::addPoints()
   srand(time(0));
   size_t n = boundaryN_*sqrtf(boundaryN_);
 
-  Rect2f rect;
+  Rect3f rect;
   for (size_t i = 0; i < boundaryN_; ++i)
     rect.add(points_[i]);
 
@@ -53,7 +55,7 @@ void DelanayTriangulator::addPoints()
     double x = ((double)rand())/RAND_MAX;
     double y = ((double)rand())/RAND_MAX;
 
-    Vec2f p(x*rect.width(), y*rect.height());
+    Vec3f p(x*rect.width(), y*rect.height(), 0);
 
     p += rect.origin();
 
@@ -62,16 +64,17 @@ void DelanayTriangulator::addPoints()
   }
 }
 
-bool DelanayTriangulator::pointInside(const Vec2f & q) const
+bool DelanayTriangulator::pointInside(const Vec3f & q) const
 {
   int num = 0;
-  Vec2f rq(0.423, 0.5347);
+  Vec3f rq(0.423, 0.5347, 0); // direction
+
   for (size_t i = 0; i < boundaryN_; ++i)
   {
-    const Vec2f & p0 = points_[i];
-    const Vec2f & p1 = points_[(i+1) % boundaryN_];
+    const Vec3f & p0 = points_[i];
+    const Vec3f & p1 = points_[(i+1) % boundaryN_];
 
-    Vec2f r;
+    Vec3f r;
     if ( edge_halfline_isect(p0, p1, q, rq, r) )
       num++;
   }
@@ -85,11 +88,11 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
   int index = -1;  
   double bestt = DBL_MAX;
   
-  const Vec2f & p0 = points_[edge.org()];
-  const Vec2f & p1 = points_[edge.dst()];
+  const Vec3f & p0 = points_[edge.org()];
+  const Vec3f & p1 = points_[edge.dst()];
 
-  Vec2f p = (p0 + p1) * 0.5;
-  Vec2f rp = p1 - p0;
+  Vec3f p = (p0 + p1) * 0.5;
+  Vec3f rp = p1 - p0;
 
   std::swap(rp.x, rp.y);
   rp.y = -rp.y;
@@ -105,14 +108,14 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
     {
       OrEdge g(edge.dst(), i);
       
-      const Vec2f & q0 = points_[g.org()];
-      const Vec2f & q1 = points_[g.dst()];
-      Vec2f q = (q0 + q1) * 0.5;
-      Vec2f rq = q1 - q0;
+      const Vec3f & q0 = points_[g.org()];
+      const Vec3f & q1 = points_[g.dst()];
+      Vec3f q = (q0 + q1) * 0.5;
+      Vec3f rq = q1 - q0;
       std::swap(rq.x, rq.y);
       rq.y = -rq.y;
 
-      Vec2f r;
+      Vec3f r;
       if ( !line_line_isect(p, rp, q, rq, r) )
         continue;
 
@@ -131,7 +134,7 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
   return index;
 }
 
-bool DelanayTriangulator::isectEdge(const Vec2f & p0, const Vec2f & p1, size_t i0, size_t i1) const
+bool DelanayTriangulator::isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i0, size_t i1) const
 {
   for (size_t i = 0; i < boundaryN_; ++i)
   {
@@ -139,10 +142,10 @@ bool DelanayTriangulator::isectEdge(const Vec2f & p0, const Vec2f & p1, size_t i
     if ( i == i0 || j == i0 || i == i1 || j == i1 )
       continue;
 
-    const Vec2f & q0 = points_[i];
-    const Vec2f & q1 = points_[j];
+    const Vec3f & q0 = points_[i];
+    const Vec3f & q1 = points_[j];
 
-    Vec2f r;
+    Vec3f r;
     if ( edges_isect(p0, p1, q0, q1, r) )
       return true;
   }

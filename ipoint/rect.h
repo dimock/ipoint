@@ -15,45 +15,45 @@
 
 #define MinSizes 1e-10
 
-struct Rect2f
+struct Rect3f
 {
-  Vec2f vmin, vmax;
+  Vec3f vmin, vmax;
 
-  Rect2f()
+  Rect3f()
   {
     makeInvalid();
   }
 
-  Rect2f(const Vec2f & vmin, const Vec2f & vmax)
+  Rect3f(const Vec3f & vmin, const Vec3f & vmax)
   {
-    this->vmin.set(vmin);
+    this->vmin = vmin;
     this->vmax = vmax;
     validate();
   }
 
-  Rect2f(const Rect2f & rect)
+  Rect3f(const Rect3f & rect)
   {
-    this->vmin.set(rect.vmin);
-    this->vmax.set(rect.vmax);
+    this->vmin = rect.vmin;
+    this->vmax = rect.vmax;
     validate();
   }
 
   void makeInvalid()
   {
-    vmin.x = vmin.y = vmin.x = DBL_MAX;
-    vmax.x = vmax.y = vmax.x = -DBL_MAX;
+    vmin.x = vmin.y = vmin.z = DBL_MAX;
+    vmax.x = vmax.y = vmax.z = -DBL_MAX;
   }
 
-  void set(const Vec2f & orig, const Vec2f & dim)
+  void set(const Vec3f & orig, const Vec3f & dim)
   {
     vmin = orig;
     vmax = vmin + dim;
   }
 
-  Rect2f & operator = (const Rect2f & rect)
+  Rect3f & operator = (const Rect3f & rect)
   {
-    this->vmin.set(rect.vmin);
-    this->vmax.set(rect.vmax);
+    this->vmin = rect.vmin;
+    this->vmax = rect.vmax;
     validate();
     return *this;
   }
@@ -67,34 +67,79 @@ struct Rect2f
   {
     if ( vmin.x > vmax.x )
       std::swap(vmin.x, vmax.x);
+
     if ( vmin.y > vmax.y )
       std::swap(vmin.y, vmax.y);
 
-    if ( width() < MinSizes && height() > MinSizes )
-    {
-      vmin.x -= height() * .5;
-      vmax.x += height() * .5;
-    }
-    else if ( width() > MinSizes && height() < MinSizes )
-    {
-      vmin.y -= width() *.5;
-      vmax.y += width() *.5;
-    }
+    if ( vmin.z > vmax.z )
+      std::swap(vmin.z, vmax.z);
   }
 
-  void add(const Vec2f & v)
+  bool pointInside(const Vec3f & p) const
+  {
+    return (vmin.x < p.x && p.x < vmax.x) &&
+           (vmin.y < p.y && p.y < vmax.y) &&
+           (vmin.z < p.z && p.z < vmax.z);
+  }
+
+  bool intersecting(const Rect3f & r) const
+  {
+    return pointInside(r.vmin) || pointInside(r.vmax) || r.pointInside(vmin) || r.pointInside(vmax);
+  }
+
+  Rect3f getOctant(int i) const
+  {
+    Vec3f c = center();
+
+    switch ( i )
+    {
+    case 0:
+      return Rect3f(vmin, c);
+
+    case 1:
+      return Rect3f(Vec3f(c.x, vmin.y, vmin.z), Vec3f(vmax.x, c.y, c.z));
+
+    case 2:
+      return Rect3f(Vec3f(c.x, c.y, vmin.z), Vec3f(vmax.x, vmax.y, c.z));
+
+    case 3:
+      return Rect3f(Vec3f(vmin.x, c.y, vmin.z), Vec3f(c.x, vmax.y, c.z));
+
+    case 4:
+      return Rect3f(Vec3f(vmin.x, vmin.y, c.z), Vec3f(c.x, c.y, vmax.z));
+
+    case 5:
+      return Rect3f(Vec3f(c.x, vmin.y, c.z), Vec3f(vmax.x, c.y, vmax.z));
+
+    case 6:
+      return Rect3f(Vec3f(c.x, c.y, c.z), Vec3f(vmax.x, vmax.y, vmax.z));
+
+    case 7:
+      return Rect3f(Vec3f(vmin.x, c.y, c.z), Vec3f(c.x, vmax.y, vmax.z));
+    }
+
+    return Rect3f();
+  }
+
+  void add(const Vec3f & v)
   {
     if ( v.x < vmin.x )
       vmin.x = v.x;
     if ( v.x > vmax.x )
       vmax.x = v.x;
+
     if ( v.y < vmin.y )
       vmin.y = v.y;
     if ( v.y > vmax.y )
       vmax.y = v.y;
+
+    if ( v.z < vmin.z )
+      vmin.z = v.z;
+    if ( v.z > vmax.z )
+      vmax.z = v.z;
   }
 
-  void add(const Rect2f & rect)
+  void add(const Rect3f & rect)
   {
     add(rect.vmin);
     add(rect.vmax);
@@ -110,71 +155,68 @@ struct Rect2f
     return vmax.y - vmin.y;
   }
 
-  Vec2f dimension() const
+  double depth() const
   {
-    return Vec2f(width(), height());
+    return vmax.z - vmin.z;
   }
 
-  Vec2f origin() const
+  Vec3f dimension() const
+  {
+    return Vec3f(width(), height(), depth());
+  }
+
+  Vec3f origin() const
   {
     return vmin;
   }
 
-  Vec2f center() const
+  Vec3f center() const
   {
-    Vec2f c = vmin + vmax;
-    return c.scale(Vec2f(0.5, 0.5));
+    Vec3f c = vmin + vmax;
+    return c *= 0.5;
   }
 
-  void scale(const Vec2f & s)
+  void scale(const Vec3f & s)
   {
-    Vec2f c = center();
-    Vec2f d = dimension();
+    Vec3f c = center();
+    Vec3f d = dimension();
 
     d.scale(s);
-    d.scale(Vec2f(0.5, 0.5));
+    d *= 0.5;
 
     vmin = c - d;
     vmax = c + d;
   }
 
-  void inflate(const Vec2f & d)
+  void inflate(const Vec3f & d)
   {
     vmin -= d;
     vmax += d;
   }
 
-  void move(const Vec2f & d)
+  void move(const Vec3f & d)
   {
     vmin += d;
     vmax += d;
   }
 };
 
-struct Screen2f
+struct Screen
 {
   // positions of the screen in world space
-  Rect2f rect;
+  Rect3f rect;
 
   // size in screen units (ex. pixels)
-  Vec2f  size;
+  Vec3f  size;
 
   // if TRUE - 0 is upper point (as default bitmap)
   bool topbottom;
 
-  Screen2f(const Screen2f & screen)
+  Screen() : topbottom(true)
   {
-    this->rect = screen.rect;
-    this->size = screen.size;
-    this->topbottom = screen.topbottom;
   }
 
-  Screen2f()
-  {
-    this->topbottom = true;
-  }
-
-  Screen2f(const Rect2f & rect, const Vec2f & size, bool topbottom = true)
+  Screen(const Rect3f & rect, const Vec3f & size, bool topbottom = true)
   {
     this->rect = rect;
     this->size = size;
@@ -186,12 +228,12 @@ struct Screen2f
     return rect.isValid() && size.x > MinSizes && size.y > MinSizes;
   }
 
-  Vec2f toScreen(const Vec2f & v) const
+  Vec3f toScreen(const Vec3f & v) const
   {
     if ( !isValid() )
-         return Vec2f();
+         return Vec3f();
 
-    Vec2f pt = v - rect.origin();
+    Vec3f pt = v - rect.origin();
     pt.scale(rect.dimension().rcpr());
 
     if ( topbottom )
@@ -200,12 +242,12 @@ struct Screen2f
     return pt.scale(size);
   }
 
-  Vec2f toWorld(const Vec2f & v) const
+  Vec3f toWorld(const Vec3f & v) const
   {
     if ( !isValid() )
          return rect.origin();
 
-    Vec2f pt = v;
+    Vec3f pt = v;
 
     pt.scale(size.rcpr());
    
@@ -219,12 +261,12 @@ struct Screen2f
     return pt;
   }
 
-  Vec2f deltaToScreen(const Vec2f & d) const
+  Vec3f deltaToScreen(const Vec3f & d) const
   {
     if ( !isValid() )
-      return Vec2f();
+      return Vec3f();
 
-    Vec2f dpt = d;
+    Vec3f dpt = d;
     dpt.scale(rect.dimension().rcpr());
 
     if ( topbottom )
@@ -233,12 +275,12 @@ struct Screen2f
     return dpt.scale(size);
   }
 
-  Vec2f deltaToWorld(const Vec2f & d) const
+  Vec3f deltaToWorld(const Vec3f & d) const
   {
     if ( !isValid() )
-      return Vec2f();
+      return Vec3f();
 
-    Vec2f dv = d;
+    Vec3f dv = d;
     dv.scale(size.rcpr());
 
     if ( topbottom )
@@ -247,7 +289,7 @@ struct Screen2f
     return dv.scale(rect.dimension());
   }
 
-  void moveInWorld(const Vec2f & wd)
+  void moveInWorld(const Vec3f & wd)
   {
     if ( !isValid() )
       return;
@@ -255,7 +297,7 @@ struct Screen2f
     rect.move(wd);
   }
 
-  void moveInScreen(const Vec2f & sd)
+  void moveInScreen(const Vec3f & sd)
   {
     if ( !isValid() )
       return;

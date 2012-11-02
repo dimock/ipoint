@@ -37,10 +37,10 @@ private slots:
 private:
   void draw();
   void recalcScreen();
-  bool isOverFirstPt(const Vec2f & p);
+  bool isOverFirstPt(const Vec3f & p);
 
   IntrusionPointAlgorithm alg_;
-  Screen2f screen_;
+  Screen screen_;
   QPoint curPt_;
 
   const double distToPt_;

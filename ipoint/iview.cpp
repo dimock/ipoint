@@ -10,6 +10,7 @@ using namespace std;
 ViewWindow::ViewWindow(QWidget * parent) :
   QWidget(parent), distToPt_(6), radiusPt_(4)
 {
+  screen_.size.z = 1;
   setMouseTracking(true);
   connect(this, SIGNAL(mouseMoved(const QPoint & )), this, SLOT(onPosChanged(const QPoint & )));
   setAttribute(Qt::WA_DeleteOnClose, true);
@@ -44,13 +45,13 @@ void ViewWindow::recalcScreen()
 {
   if ( screen_.size.x > 0 && screen_.size.y > 0 )
   {
-    Vec2f s(1, 1);
+    Vec3f s(1, 1, 1);
     float r = screen_.size.x/screen_.size.y;
     if ( r > 1 )
       s.x = r;
     else
       s.y = 1/r;
-    screen_.rect.set(Vec2f(0,0), Vec2f(1,1));
+    screen_.rect.set(Vec3f(0,0,0), Vec3f(1,1,1));
     screen_.rect.scale(s);
   }
 }
@@ -58,19 +59,19 @@ void ViewWindow::recalcScreen()
 void ViewWindow::mouseReleaseEvent(QMouseEvent * event)
 {
   const QPoint & pt = event->pos();
-  Vec2f pts(pt.x(), pt.y());
-  Vec2f ptw(screen_.toWorld(pts));
+  Vec3f pts(pt.x(), pt.y(), 0);
+  Vec3f ptw(screen_.toWorld(pts));
   alg_.addPoint(ptw, isOverFirstPt(pts));
   repaint();
 }
 
-bool ViewWindow::isOverFirstPt(const Vec2f & p)
+bool ViewWindow::isOverFirstPt(const Vec3f & p)
 {
   if ( alg_.pointsCount() < 1 )
     return false;
 
-  Vec2f pt = screen_.toScreen(alg_[0]);
-  if ( (pt-p).vecmod() < distToPt_ )
+  Vec3f pt = screen_.toScreen(alg_[0]);
+  if ( (pt-p).length() < distToPt_ )
     return true;
 
   return false;
@@ -85,8 +86,8 @@ void ViewWindow::onPosChanged(const QPoint & pt)
 {
   if ( curPt_ == pt )
     return;
-  Vec2f pts(pt.x(), pt.y());
-  Vec2f ptw(screen_.toWorld(pts));
+  Vec3f pts(pt.x(), pt.y(), 0);
+  Vec3f ptw(screen_.toWorld(pts));
   alg_.setCursorPt(ptw);
   repaint();
 }
@@ -107,7 +108,7 @@ void ViewWindow::draw()
   vector<QPoint> qpoints(alg_.pointsCount());
   for (size_t i = 0; i < alg_.pointsCount(); ++i)
   {
-    Vec2f pt = screen_.toScreen(alg_[i]);
+    Vec3f pt = screen_.toScreen(alg_[i]);
     qpoints[i] = QPoint(pt.x, pt.y);
   }
   
@@ -125,9 +126,9 @@ void ViewWindow::draw()
     qpoints.erase(iter);
   }
 
-  Vec2f cursorPt = screen_.toScreen(alg_.getCursorPt());
+  Vec3f cursorPt = screen_.toScreen(alg_.getCursorPt());
   bool overFirst = isOverFirstPt(cursorPt);
-  Vec2f isectPt;
+  Vec3f isectPt;
   bool selfIsect = alg_.haveSelfIsect(alg_.getCursorPt(), isectPt);
 
   // draw triangulation
@@ -143,7 +144,7 @@ void ViewWindow::draw()
       vector<QPoint> qpts;
       for (int j = 0; j < 3; ++j)
       {
-        Vec2f p = screen_.toScreen( alg_[tri.v[j]] );
+        Vec3f p = screen_.toScreen( alg_[tri.v[j]] );
         qpts.push_back( QPoint(p.x, p.y) );
       }
       qpts.push_back(qpts[0]);
@@ -154,7 +155,7 @@ void ViewWindow::draw()
   // draw dotted line from last point to cursor if contour isn't closed
   if ( !alg_.isClosed() )
   {
-    Vec2f lastPt = screen_.toScreen(alg_[alg_.pointsCount()-1]);
+    Vec3f lastPt = screen_.toScreen(alg_[alg_.pointsCount()-1]);
 
     QPoint p0(lastPt.x, lastPt.y);
     QPoint p1(cursorPt.x, cursorPt.y);
@@ -190,7 +191,7 @@ void ViewWindow::draw()
   // draw self-intersection point if found
   if ( selfIsect && !alg_.isClosed() )
   {
-    Vec2f pt = screen_.toScreen(isectPt);
+    Vec3f pt = screen_.toScreen(isectPt);
     QPoint qpt(pt.x, pt.y);
     painter.setPen( QPen(Qt::red, 1, Qt::SolidLine, Qt::RoundCap) );
     painter.setBrush( QBrush(Qt::red, Qt::SolidPattern) );

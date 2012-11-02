@@ -14,110 +14,6 @@
 #include <set>
 
 /************************************************************************/
-/* 2D Vector                                                            */
-/************************************************************************/
-
-struct Vec2f
-{
-    double x, y;
-
-    Vec2f() : x(0), y(0)
-    {}
-
-    Vec2f(const double x, const double y)
-    {
-        this->x = x;
-        this->y = y;
-    }
-
-    void set(const double x, const double y)
-    {
-        this->x = x;
-        this->y = y;
-    }
-
-    void set(const Vec2f & v)
-    {
-      set(v.x, v.y);
-    }
-
-    Vec2f operator - () const
-    {
-        return Vec2f(-x, -y);
-    }
-
-    Vec2f operator + (const Vec2f & v) const
-    {
-        return Vec2f(x + v.x, y + v.y);
-    }
-
-
-    Vec2f operator - (const Vec2f & v) const
-    {
-        return Vec2f(x - v.x, y - v.y);
-    }
-
-    Vec2f & operator += (const Vec2f & v)
-    {
-        x += v.x;
-        y += v.y;
-        return *this;
-    }
-
-    Vec2f & operator -= (const Vec2f & v)
-    {
-        x -= v.x;
-        y -= v.y;
-        return *this;
-    }
-
-    double operator * (const Vec2f & v) const
-    {
-        return x*v.x + y*v.y;
-    }
-
-    Vec2f operator * (const double f) const
-    {
-        return Vec2f(x*f, y*f);
-    }
-
-    Vec2f & operator *= (const double f)
-    {
-        x *= f; y *= f;
-        return *this;
-    }
-
-    double vecmod() const
-    {
-        return sqrt(x*x + y*y);
-    }
-
-    double vecmod2() const
-    {
-      return x*x + y*y;
-    }
-
-    Vec2f & norm()
-    {
-        double r = 1.0f/vecmod();
-        x *= r; y *= r;
-        return *this;
-    }
-
-    Vec2f & scale(const Vec2f & s)
-    {
-        this->x *= s.x;
-        this->y *= s.y;
-        return *this;
-    }
-
-    Vec2f rcpr() const
-    {
-        return Vec2f(1.0f/x, 1.0f/y);
-    }
-};
-
-/************************************************************************/
 /* 3D Vector                                                            */
 /************************************************************************/
 
@@ -140,11 +36,6 @@ struct Vec3f
         this->x = x;
         this->y = y;
         this->z = z;
-    }
-
-    void set(const Vec3f & v)
-    {
-      set(v.x, v.y, v.z);
     }
 
     Vec3f operator + (const Vec3f & v) const
@@ -195,19 +86,19 @@ struct Vec3f
         return *this;
     }
 
-    double vecmod() const
+    double length() const
     {
         return sqrt(x*x + y*y + z*z);
     }
 
     Vec3f & norm()
     {
-        double r = 1.0f / vecmod();
+        double r = 1.0f / length();
         x *= r; y *= r; z *= r;
         return *this;
     }
 
-    Vec3f & scale(Vec3f & s)
+    Vec3f & scale(const Vec3f & s)
     {
         this->x *= s.x;
         this->y *= s.y;
@@ -290,7 +181,7 @@ private:
 
 };
 
-typedef std::vector<Vec2f> Points2f;
+typedef std::vector<Vec3f> Points3f;
 typedef std::vector<Triangle> Triangles;
 typedef std::set<OrEdge> OrEdges;
 

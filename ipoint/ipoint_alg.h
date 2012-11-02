@@ -15,17 +15,17 @@ public:
 
   // polyline management
   void reset();
-  void addPoint(const Vec2f & pt, bool close);
-  void insertPoint(size_t idx, const Vec2f & pt);
+  void addPoint(const Vec3f & pt, bool close);
+  void insertPoint(size_t idx, const Vec3f & pt);
   void removePoint(size_t idx);
   size_t pointsCount() const;
-  Vec2f & operator [] (size_t idx);
-  void setCursorPt(const Vec2f & );
-  const Vec2f & getCursorPt() const;
+  Vec3f & operator [] (size_t idx);
+  void setCursorPt(const Vec3f & );
+  const Vec3f & getCursorPt() const;
   bool isCursorPtValid() const;
-  const Rect2f & getRect() const;
+  const Rect3f & getRect() const;
   bool isClosed() const;
-  bool haveSelfIsect(const Vec2f & pt, Vec2f & r) const;
+  bool haveSelfIsect(const Vec3f & pt, Vec3f & r) const;
 
   // triangulation
   bool triangulation(std::vector<Triangle> *& tris);
@@ -34,9 +34,9 @@ private:
 
   bool triangulate();
 
-  Points2f points_;
-  Vec2f cursorPt_;
-  Rect2f rect_;
+  Points3f points_;
+  Vec3f cursorPt_;
+  Rect3f rect_;
   bool closed_;
   Triangles tris_;
   size_t pointCount_;
