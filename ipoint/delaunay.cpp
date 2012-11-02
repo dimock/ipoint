@@ -12,6 +12,12 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
     std::reverse(points_.begin(), points_.end());
 }
 
+DelanayTriangulator::~DelanayTriangulator()
+{
+  for (std::list<OrEdge*>::iterator i = edgesList_.begin(); i != edgesList_.end(); ++i)
+    delete *i;
+}
+
 bool DelanayTriangulator::triangulate(Triangles & tris)
 {
   if ( points_.size() < 3 )
@@ -19,23 +25,30 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 
   addPoints();
 
+  edgesTree_.reset( new OcTree<OrEdge>(&points_, 5) );
+
   OrEdges edges;
   for (size_t i = 0; i < boundaryN_; ++i)
-    edges.insert( OrEdge(i, (i+1) % boundaryN_) );
+  {
+    OrEdge * e = new OrEdge(i, (i+1) % boundaryN_, &points_);
+    edges.insert(e);
+    edgesList_.push_back(e);
+    edgesTree_->add(e);
+  }
 
   for ( ; !edges.empty(); )
   {
     OrEdges::iterator iter = edges.begin();
-    OrEdge edge = *iter;
+    OrEdge * edge = iter->e_;
     edges.erase(iter);
 
-    int i = findTri(edge);
+    int i = findTri(*edge);
     if ( i < 0 )
       return false;
 
-    update(edges, i, edge.org());
-    update(edges, edge.dst(), i);
-    tris.push_back( Triangle(edge.org(), edge.dst(), i));
+    update(edges, i, edge->org());
+    update(edges, edge->dst(), i);
+    tris.push_back( Triangle(edge->org(), edge->dst(), i));
   }
 
   return true;
@@ -107,7 +120,7 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
     double dist = dist_to_line(p0, p1, points_[i], outside);
     if ( dist > 0 )
     {
-      OrEdge g(edge.dst(), i);
+      OrEdge g(edge.dst(), i, &points_);
       
       const Vec3f & q0 = points_[g.org()];
       const Vec3f & q1 = points_[g.dst()];
@@ -158,14 +171,14 @@ bool DelanayTriangulator::isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i
 
 void DelanayTriangulator::update(OrEdges & edges, int from, int to)
 {
-  OrEdge e(from, to);
+  OrEdge * e = new OrEdge(from, to, &points_);
 
-  OrEdges::iterator iter = edges.find(e);
+  OrEdges::iterator iter = edges.find(OrEdgeWrp(e));
   if ( iter != edges.end() )
     edges.erase(iter);
   else
   {
-    e.flip();
+    e->flip();
     edges.insert(e);
   }
 }

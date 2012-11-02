@@ -87,7 +87,7 @@ struct Rect3f
     return pointInside(r.vmin) || pointInside(r.vmax) || r.pointInside(vmin) || r.pointInside(vmax);
   }
 
-  Rect3f getOctant(int i) const
+  Rect3f octant(int i) const
   {
     Vec3f c = center();
 

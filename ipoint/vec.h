@@ -138,50 +138,7 @@ struct Triangle
 };
 
 
-class OrEdge
-{
-public:
-
-  OrEdge() : org_(-1), dst_(-1)
-  {
-  }
-
-  OrEdge(int o, int d) : org_(o), dst_(d)
-  {
-  }
-
-  void flip()
-  {
-    std::swap(org_, dst_);
-  }
-
-  bool operator < (const OrEdge & other) const
-  {
-    return org_ < other.org_ || org_ == other.org_ && dst_ < other.dst_;
-  }
-
-  bool operator == (const OrEdge & other) const
-  {
-    return org_ == other.org_ && dst_ == other.dst_;
-  }
-
-  int org() const
-  {
-    return org_;
-  }
-
-  int dst() const
-  {
-    return dst_;
-  }
-
-private:
-
-  int org_, dst_;
-
-};
-
 typedef std::vector<Vec3f> Points3f;
 typedef std::vector<Triangle> Triangles;
-typedef std::set<OrEdge> OrEdges;
+
 
