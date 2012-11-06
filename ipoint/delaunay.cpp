@@ -8,32 +8,94 @@ using namespace iMath;
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   points_(points), boundaryN_(points.size())
 {
+  //points_.clear();
+  //load("d:\\scenes\\3dpad\\points.txt");
+
   if ( !iMath::cw(points_) )
     std::reverse(points_.begin(), points_.end());
+
+  if ( points_.size() < 3 )
+    throw std::logic_error("not enough points for triangulation");
+
+  addPoints();
+
+  save("d:\\scenes\\3dpad\\points.txt");
+}
+
+void DelanayTriangulator::load(const char * fname)
+{
+  FILE * f = fopen(fname, "rt");
+  char buff[256];
+  boundaryN_ = 0; 
+  bool stop = false;
+  const char * sepr = "\t ,;{}\n\r";
+  for ( ; fgets(buff, sizeof(buff), f); )
+  {
+    if ( buff[0] == '{' )
+      continue;
+
+    if ( buff[0] == '}' )
+    {
+      stop = true;
+      continue;
+    }
+
+    char * s = strtok(buff, sepr);
+    double v[3] = {0};
+    for (int i = 0; s && i < 3; ++i)
+    {
+      float x;
+      sscanf(s, "%f", &x);
+      v[i] = x;
+      s = strtok(0, sepr);
+    }
+    points_.push_back( Vec3f(v[0], v[1], v[2]) );
+    if ( !stop )
+      boundaryN_++;
+  }
+  fclose(f);
+}
+
+void DelanayTriangulator::save(const char * fname)
+{
+  FILE * f = fopen(fname, "wt");
+  fprintf(f, "{\n");
+  for (size_t i = 0; i < boundaryN_; ++i)
+  {
+    const Vec3f & p = points_[i];
+    fprintf(f, "  {%g, %g}\n", p.x, p.y);
+  }
+  fprintf(f, "}\n");
+  for (size_t i = boundaryN_; i < points_.size(); ++i)
+  {
+    const Vec3f & p = points_[i];
+    fprintf(f, "{\n");
+    fprintf(f, "  {%g, %g}\n", p.x, p.y);
+    fprintf(f, "}\n");
+  }
+  fclose(f);
 }
 
 DelanayTriangulator::~DelanayTriangulator()
 {
-  for (std::list<OrEdge*>::iterator i = edgesList_.begin(); i != edgesList_.end(); ++i)
-    delete *i;
+}
+
+void DelanayTriangulator::pushEdge(OrEdges & edges, OrEdge_shared e)
+{
+  edges.insert(e.get());
+  edgesList_.push_back(e);
+  edgesTree_->add(e.get());
 }
 
 bool DelanayTriangulator::triangulate(Triangles & tris)
 {
-  if ( points_.size() < 3 )
-    return false;
-
-  addPoints();
-
-  edgesTree_.reset( new OcTree<OrEdge>(&points_, 5) );
+  edgesTree_.reset( new OcTree<OrEdge>(&points_, 3) );
 
   OrEdges edges;
   for (size_t i = 0; i < boundaryN_; ++i)
   {
-    OrEdge * e = new OrEdge(i, (i+1) % boundaryN_, &points_);
-    edges.insert(e);
-    edgesList_.push_back(e);
-    edgesTree_->add(e);
+    OrEdge_shared e( new OrEdge(i, (i+1) % boundaryN_, &points_) );
+    pushEdge(edges, e);
   }
 
   for ( ; !edges.empty(); )
@@ -48,8 +110,12 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 
     update(edges, i, edge->org());
     update(edges, edge->dst(), i);
+
     tris.push_back( Triangle(edge->org(), edge->dst(), i));
   }
+
+  edgesList_.clear();
+  vertsList_.clear();
 
   return true;
 }
@@ -57,7 +123,7 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 void DelanayTriangulator::addPoints()
 {
   srand(time(0));
-  size_t n = boundaryN_*boundaryN_;
+  size_t n = boundaryN_*sqrtf(boundaryN_);
 
   Rect3f rect;
   for (size_t i = 0; i < boundaryN_; ++i)
@@ -137,7 +203,10 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
       double t = dist_to_line(p0, p1, r, outside);
       if ( t < bestt )
       {
-        if ( !isectEdge(p0, points_[i], edge.org(), i) && !isectEdge(p1, points_[i], edge.dst(), i) )
+        OrEdge oe0(edge.org(), i, &points_);
+        OrEdge oe1(edge.dst(), i, &points_);
+
+        if ( !hasIsect(oe0) && !hasIsect(oe1) )
         {
           index = i;
           bestt = t;
@@ -149,21 +218,22 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
   return index;
 }
 
-bool DelanayTriangulator::isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i0, size_t i1) const
+bool DelanayTriangulator::hasIsect(const OrEdge & oe) const
 {
-  double lp = (p0 - p1).length();
-  for (size_t i = 0; i < boundaryN_; ++i)
-  {
-    size_t j = (i+1) % boundaryN_;
-    if ( i == i0 || j == i0 || i == i1 || j == i1 )
-      continue;
+  double dim = oe.rect().dimension().length();
+ 
+  std::set<const OrEdge*> target;
+  edgesTree_->collect(oe.rect(), target);
 
-    const Vec3f & q0 = points_[i];
-    const Vec3f & q1 = points_[j];
+  for (std::set<const OrEdge*>::iterator iter = target.begin(); iter != target.end(); ++iter)
+  {
+    const OrEdge * e = *iter;
+    if ( e->touches(oe) )
+      continue;
 
     Vec3f r;
     double dist;
-    if ( edges_isect(p0, p1, q0, q1, r, dist) && dist < lp )
+    if ( e->isectEdge(oe, r, dist) && dist < dim )
       return true;
   }
   return false;
@@ -171,14 +241,14 @@ bool DelanayTriangulator::isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i
 
 void DelanayTriangulator::update(OrEdges & edges, int from, int to)
 {
-  OrEdge * e = new OrEdge(from, to, &points_);
+  std::auto_ptr<OrEdge> e( new OrEdge(from, to, &points_) );
 
-  OrEdges::iterator iter = edges.find(OrEdgeWrp(e));
+  OrEdges::iterator iter = edges.find(OrEdgeWrp(e.get()));
   if ( iter != edges.end() )
     edges.erase(iter);
   else
   {
     e->flip();
-    edges.insert(e);
+    pushEdge(edges, OrEdge_shared(e.release()));
   }
 }

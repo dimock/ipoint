@@ -2,6 +2,8 @@
 
 #include "rect.h"
 #include <list>
+#include <boost/shared_ptr.hpp>
+#include <imath.h>
 
 struct Vertex
 {
@@ -32,26 +34,9 @@ public:
     rect_.add((*points_)[o]);
     rect_.add((*points_)[d]);
 
-    Vec3f dim  =rect_.dimension();
-    double maxd = (std::max(std::max(dim.x, dim.y), dim.z)) * 0.5;
-    if ( dim.x < maxd )
-    {
-      double dx = (maxd - dim.x) * 0.5;
-      rect_.vmin.x -= dx;
-      rect_.vmax.x += dx;
-    }
-    if ( dim.y < maxd )
-    {
-      double dy = (maxd - dim.y) * 0.5;
-      rect_.vmin.y -= dy;
-      rect_.vmax.y += dy;
-    }
-    if ( dim.z < maxd )
-    {
-      double dz = (maxd - dim.x) * 0.5;
-      rect_.vmin.z -= dz;
-      rect_.vmax.z += dz;
-    }
+    Vec3f dim  = rect_.dimension();
+    double delta = (dim.x + dim.y + dim.z) * 0.001;
+    rect_.inflate( Vec3f(delta, delta, delta) );
   }
 
   void flip()
@@ -79,9 +64,29 @@ public:
     return dst_;
   }
 
+  const Rect3f & rect() const
+  {
+    return rect_;
+  }
+
   bool intersect(const Rect3f & r) const
   {
     return rect_.intersecting(r);
+  }
+
+  bool isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const
+  {
+    return iMath::edges_isect((*points_)[org_], (*points_)[dst_], p0, p1, r, dist);
+  }
+
+  bool isectEdge(const OrEdge & other, Vec3f & r, double & dist) const
+  {
+    return isectEdge((*other.points_)[other.org_], (*other.points_)[other.dst_], r, dist);
+  }
+
+  bool touches(const OrEdge & other) const
+  {
+    return org_ == other.org_ || org_ == other.dst_ || dst_ == other.org_ || dst_ == other.dst_;
   }
 
 private:
@@ -91,6 +96,9 @@ private:
   int org_, dst_;
 
 };
+
+typedef boost::shared_ptr<OrEdge> OrEdge_shared;
+typedef boost::shared_ptr<Vertex> Vertex_shared;
 
 struct OrEdgeWrp
 {
@@ -120,14 +128,6 @@ class OcTree
 
     Node(const Rect3f & r, int level) : r_(r), level_(level)
     {
-      for (int i = 0; i < 8; ++i)
-        children_[i] = 0;
-    }
-
-    ~Node()
-    {
-      for (int i = 0; i < 8; ++i)
-        delete children_[i];
     }
 
     bool intersect(const Q & q) const
@@ -135,13 +135,18 @@ class OcTree
       return q.intersect(r_);
     }
 
-    Node * children_[8];
+    bool intersect(const Rect3f & rc) const
+    {
+      return r_.intersecting(rc);
+    }
+
+    boost::shared_ptr<Node> children_[8];
 
     int level_;
     std::list<const Q*> array_;
   };
 
-  Node<T> * root_;
+  boost::shared_ptr<Node<T>> root_;
 
 public:
 
@@ -150,33 +155,36 @@ public:
     for (size_t i = 0; i < points_->size(); ++i)
       rect_.add((*points_)[i]);
 
-    root_ = new Node<T>(rect_, 0);
+    root_.reset( new Node<T>(rect_, 0) );
   }
 
   void add(const T * t)
   {
-    Node<T> * node = findNode(root_, t);
-    if ( !node )
-      return;
-    if ( node->level_ < depth_ )
-      splitNode(node, t);
+    splitNode(root_.get(), t);
+  }
+
+  void collect(const Rect3f & rc, std::set<const T*> & items)
+  {
+    search(root_.get(), rc, items);
   }
 
 private:
 
-  Node<T> * findNode(Node<T> * node, const T * t)
+  void search(Node<T> * node, const Rect3f & rc, std::set<const T*> & items)
   {
-    if ( !node || !node->intersect(*t) )
-      return 0;
+    if ( !node || !node->intersect(rc) )
+      return;
 
-    for (int i = 0; i < 8; ++i)
+    if ( node->level_ >= depth_ )
     {
-      Node<T> * n = findNode(node->children_[i], t);
-      if ( n )
-        return n;
+      for (std::list<const T*>::iterator i = node->array_.begin(); i != node->array_.end(); ++i)
+        items.insert(*i);
+
+      return;
     }
 
-    return node;
+    for (int i = 0; i < 8; ++i)
+      search(node->children_[i].get(), rc, items);
   }
 
   void splitNode(Node<T> * node, const T * t)
@@ -193,23 +201,28 @@ private:
       if ( !t->intersect(rc) )
         continue;
 
-      if ( !node->children_[i] )
-      {
-        node->children_[i] = new Node<T>(rc, node->level_+1);
-        splitNode(node->children_[i], t);
-      }
+      if ( !node->children_[i].get() )
+        node->children_[i].reset( new Node<T>(rc, node->level_+1) );
+
+      splitNode(node->children_[i].get(), t);
     }
   }
 };
+
+typedef std::list<OrEdge_shared> OrEdgesList;
+typedef std::list<Vertex_shared> VerticesList;
 
 class DelanayTriangulator
 {
 public:
   
   DelanayTriangulator(Points3f & points);
-  ~DelanayTriangulator();
+  virtual ~DelanayTriangulator();
 
   bool triangulate(Triangles & tris);
+
+  void save(const char * fname);
+  void load(const char * fname);
 
 private:
 
@@ -219,7 +232,9 @@ private:
   int  findTri(const OrEdge & edge);
   void update(OrEdges & edges, int from, int to);
 
-  bool isectEdge(const Vec3f & p0, const Vec3f & p1, size_t i0, size_t i1) const;
+  bool hasIsect(const OrEdge & oe) const;
+
+  void pushEdge(OrEdges & edges, OrEdge_shared e);
 
   Points3f & points_;
   size_t boundaryN_;
@@ -227,6 +242,6 @@ private:
   std::auto_ptr<OcTree<OrEdge>> edgesTree_;
   std::auto_ptr<OcTree<Vertex>> vertexTree_;
 
-  std::list<OrEdge*> edgesList_;
-  std::list<Vertex*> vertexList_;
+  OrEdgesList  edgesList_;
+  VerticesList vertsList_;
 };

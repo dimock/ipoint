@@ -77,14 +77,16 @@ struct Rect3f
 
   bool pointInside(const Vec3f & p) const
   {
-    return (vmin.x < p.x && p.x < vmax.x) &&
-           (vmin.y < p.y && p.y < vmax.y) &&
-           (vmin.z < p.z && p.z < vmax.z);
+    return (vmin.x <= p.x && p.x <= vmax.x) &&
+           (vmin.y <= p.y && p.y <= vmax.y) &&
+           (vmin.z <= p.z && p.z <= vmax.z);
   }
 
   bool intersecting(const Rect3f & r) const
   {
-    return pointInside(r.vmin) || pointInside(r.vmax) || r.pointInside(vmin) || r.pointInside(vmax);
+    return ( r.vmin.x <= vmax.x && r.vmax.x >= vmin.x ) &&
+           ( r.vmin.y <= vmax.y && r.vmax.y >= vmin.y ) &&
+           ( r.vmin.z <= vmax.z && r.vmax.z >= vmin.z );
   }
 
   Rect3f octant(int i) const
