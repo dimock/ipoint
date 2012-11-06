@@ -1,7 +1,7 @@
 #include "imath.h"
 
 
-static const double err = 1e-20;
+static const double err = 1e-10;
 
 bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, const Vec3f & q1, Vec3f & r, double & dist)
 {

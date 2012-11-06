@@ -6,7 +6,7 @@
 using namespace iMath;
 
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
-  points_(points), boundaryN_(points.size())
+  points_(points), boundaryN_(points.size()), edgeLength_(0)
 {
   //points_.clear();
   //load("d:\\scenes\\3dpad\\points.txt");
@@ -18,6 +18,18 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
     throw std::logic_error("not enough points for triangulation");
 
   addPoints();
+
+  int D = log((double)points_.size())/(2*log(2.0))+1;
+  if ( D > 6 )
+    D = 6;
+  edgesTree_.reset( new OcTree<OrEdge>(&points_, D) );
+  vertexTree_.reset( new OcTree<Vertex>(&points_, D) );
+
+  for (size_t i = 0; i < points_.size(); ++i)
+  {
+    vertsList_.push_back( Vertex_shared(new Vertex(i, &points_)) );
+    vertexTree_->add(vertsList_.back().get());
+  }
 
   save("d:\\scenes\\3dpad\\points.txt");
 }
@@ -89,14 +101,15 @@ void DelanayTriangulator::pushEdge(OrEdges & edges, OrEdge_shared e)
 
 bool DelanayTriangulator::triangulate(Triangles & tris)
 {
-  edgesTree_.reset( new OcTree<OrEdge>(&points_, 3) );
-
   OrEdges edges;
+  edgeLength_ = 0;
   for (size_t i = 0; i < boundaryN_; ++i)
   {
     OrEdge_shared e( new OrEdge(i, (i+1) % boundaryN_, &points_) );
     pushEdge(edges, e);
+    edgeLength_ += e->length();
   }
+  edgeLength_ *= 1.0/boundaryN_;
 
   for ( ; !edges.empty(); )
   {
@@ -106,7 +119,10 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 
     int i = findTri(*edge);
     if ( i < 0 )
+    {
+      //findTri(*edge);
       return false;
+    }
 
     update(edges, i, edge->org());
     update(edges, edge->dst(), i);
@@ -123,7 +139,7 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 void DelanayTriangulator::addPoints()
 {
   srand(time(0));
-  size_t n = boundaryN_*sqrtf(boundaryN_);
+  size_t n = boundaryN_*(boundaryN_);
 
   Rect3f rect;
   for (size_t i = 0; i < boundaryN_; ++i)
@@ -171,51 +187,134 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
   const Vec3f & p0 = points_[edge.org()];
   const Vec3f & p1 = points_[edge.dst()];
 
-  Vec3f p = (p0 + p1) * 0.5;
-  Vec3f rp = p1 - p0;
+  double err = (p1 - p0).length()*1e-10;
+  Vec3f pc = (p0 + p1) * 0.5;
 
-  std::swap(rp.x, rp.y);
-  rp.y = -rp.y;
+  double dim_min = edgeLength_*0.3;
+  Rect3f rect = edge.rect();
+  Vec3f infl(0, 0, 0);
+  if ( rect.dimension().x < dim_min )
+    infl.x = dim_min;
+  if ( rect.dimension().y < dim_min )
+    infl.y = dim_min;
+  if ( rect.dimension().z < dim_min )
+    infl.z = dim_min;
 
-  for (size_t i = 0; i < points_.size(); ++i)
+  rect.inflate(infl);
+  
+  Rect3f rect0 = rect;
+
+  Vec3f tdim = vertexTree_->rect().dimension();
+
+  std::set<const Vertex*> looked_up;
+  for ( ; !rect.rectInside(vertexTree_->rect()); )
   {
-    if ( i == edge.org() || i == edge.dst() )
-      continue;
+    //Vec3f & rdim = rect.dimension();
+    //if ( rdim.x > tdim.x*0.3 && rdim.y > tdim.y*0.3 && rdim.z > tdim.z*0.3 )
+    //  break;
 
-    bool outside = false;
-    double dist = dist_to_line(p0, p1, points_[i], outside);
-    if ( dist > 0 )
+    std::set<const Vertex*> verts;
+    vertexTree_->collect(rect, verts);
+
+    for (std::set<const Vertex*>::iterator iter = verts.begin(); iter != verts.end(); ++iter)
     {
-      OrEdge g(edge.dst(), i, &points_);
-      
-      const Vec3f & q0 = points_[g.org()];
-      const Vec3f & q1 = points_[g.dst()];
-      Vec3f q = (q0 + q1) * 0.5;
-      Vec3f rq = q1 - q0;
-      std::swap(rq.x, rq.y);
-      rq.y = -rq.y;
-
-      Vec3f r;
-      double dist;
-      if ( !line_line_isect(p, rp, q, rq, r, dist) )
+      if ( looked_up.find(*iter) != looked_up.end() )
         continue;
 
-      double t = dist_to_line(p0, p1, r, outside);
-      if ( t < bestt )
-      {
-        OrEdge oe0(edge.org(), i, &points_);
-        OrEdge oe1(edge.dst(), i, &points_);
+      looked_up.insert(*iter);
 
-        if ( !hasIsect(oe0) && !hasIsect(oe1) )
-        {
-          index = i;
-          bestt = t;
-        }
-      }
+      const int & i = (*iter)->index_;
+      if ( canUsePoint(err, i, edge, pc, bestt) )
+        index = i;
     }
+
+    if ( index >= 0 )
+      break;
+
+    Vec3f dim = rect.dimension()*0.5;
+    rect.inflate(dim);
   }
 
+  //if ( index < 0 )
+  //{
+  //  points_.push_back(Vec3f(0,0,0));
+  //  rect = rect0;
+  //  for (int step = 0; step < 3; ++step)
+  //  {
+  //    std::set<const Vertex*> verts;
+  //    vertexTree_->collect(rect, verts);
+  //    if ( verts.size() > 0 )
+  //    {
+  //      int i0 = (*verts.begin())->index_;
+  //      Vec3f center = points_[i0];
+  //      for (std::set<const Vertex*>::iterator iter = verts.begin(); iter != verts.end(); ++iter)
+  //      {
+  //        const Vec3f & p = points_[(*iter)->index_];
+  //        center += p;
+  //      }
+  //      center *= 1.0/verts.size();
+
+  //      int i = points_.size()-1;
+  //      for (int j = 0; j < 10; ++j)
+  //      {
+  //        double x = ((double)rand())/RAND_MAX;
+  //        double y = ((double)rand())/RAND_MAX;
+  //        Vec3f p(x*rect.width()*0.3, y*rect.height()*0.3, 0);
+  //        p += center;
+  //        if ( canUsePoint(err, i, edge, pc, bestt) )
+  //          index = i;
+  //      }
+  //    }
+
+  //    if ( index >= 0 )
+  //      break;
+
+  //    Vec3f dim = rect.dimension()*0.5;
+  //    rect.inflate(dim);
+  //  }
+  //}
+
   return index;
+}
+
+bool DelanayTriangulator::canUsePoint(const double & err, size_t i, const OrEdge & edge, const Vec3f & pc, double & bestt) const
+{
+  if ( i == edge.org() || i == edge.dst() )
+    return false;
+
+  const Vec3f & p0 = points_[edge.org()];
+  const Vec3f & p1 = points_[edge.dst()];
+  const Vec3f & q = points_[i];
+
+  bool outside = false;
+  double dist = dist_to_line(p0, p1, q, outside);
+  if ( dist <= 0 )
+    return false;
+
+  Vec3f nor = (q - p0) ^ (p1 - p0);
+  if ( nor.length() < err )
+    return false;
+
+  Vec3f rp = (p1 - p0) ^ nor;
+  Vec3f rq = (p0 - q) ^ nor;
+  Vec3f qc = (p0 + q) * 0.5;
+
+  Vec3f r;
+  if ( !line_line_isect(pc, rp, qc, rq, r, dist) )
+    return false;
+
+  double t = dist_to_line(p0, p1, r, outside);
+  if ( t >= bestt )
+    return false;
+
+  OrEdge oe0(edge.org(), i, &points_);
+  OrEdge oe1(edge.dst(), i, &points_);
+
+  if ( hasIsect(oe0) || hasIsect(oe1) )
+    return false;
+
+  bestt = t;
+  return true;
 }
 
 bool DelanayTriangulator::hasIsect(const OrEdge & oe) const

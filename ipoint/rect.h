@@ -82,6 +82,11 @@ struct Rect3f
            (vmin.z <= p.z && p.z <= vmax.z);
   }
 
+  bool rectInside(const Rect3f & r) const
+  {
+    return pointInside(r.vmin) && pointInside(r.vmax);
+  }
+
   bool intersecting(const Rect3f & r) const
   {
     return ( r.vmin.x <= vmax.x && r.vmax.x >= vmin.x ) &&

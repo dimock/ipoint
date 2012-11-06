@@ -69,6 +69,11 @@ public:
     return rect_;
   }
 
+  double length() const
+  {
+    return ((*points_)[org_] - (*points_)[dst_]).length();
+  }
+
   bool intersect(const Rect3f & r) const
   {
     return rect_.intersecting(r);
@@ -168,6 +173,11 @@ public:
     search(root_.get(), rc, items);
   }
 
+  const Rect3f & rect() const
+  {
+    return rect_;
+  }
+
 private:
 
   void search(Node<T> * node, const Rect3f & rc, std::set<const T*> & items)
@@ -236,8 +246,12 @@ private:
 
   void pushEdge(OrEdges & edges, OrEdge_shared e);
 
+  bool canUsePoint(const double & err, size_t i, const OrEdge & edge, const Vec3f & pc, double & bestt) const;
+
+
   Points3f & points_;
   size_t boundaryN_;
+  double edgeLength_;
 
   std::auto_ptr<OcTree<OrEdge>> edgesTree_;
   std::auto_ptr<OcTree<Vertex>> vertexTree_;
