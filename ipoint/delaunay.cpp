@@ -9,7 +9,7 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   points_(points), boundaryN_(points.size()), edgeLength_(0)
 {
   //points_.clear();
-  //load("d:\\scenes\\3dpad\\points.txt");
+  //load("d:\\scenes\\3dpad\\stress_points.txt");
 
   if ( !iMath::cw(points_) )
     std::reverse(points_.begin(), points_.end());
@@ -119,10 +119,7 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 
     int i = findTri(*edge);
     if ( i < 0 )
-    {
-      //findTri(*edge);
-      return false;
-    }
+      continue;
 
     update(edges, i, edge->org());
     update(edges, edge->dst(), i);
@@ -209,9 +206,9 @@ int DelanayTriangulator::findTri(const OrEdge & edge)
   std::set<const Vertex*> looked_up;
   for ( ; !rect.rectInside(vertexTree_->rect()); )
   {
-    //Vec3f & rdim = rect.dimension();
-    //if ( rdim.x > tdim.x*0.3 && rdim.y > tdim.y*0.3 && rdim.z > tdim.z*0.3 )
-    //  break;
+    Vec3f & rdim = rect.dimension();
+    if ( rdim.x > tdim.x*0.2 && rdim.y > tdim.y*0.2 && rdim.z > tdim.z*0.2 )
+      break;
 
     std::set<const Vertex*> verts;
     vertexTree_->collect(rect, verts);
