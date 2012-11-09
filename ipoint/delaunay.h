@@ -151,8 +151,8 @@ public:
 
   bool triangulate(Triangles & tris);
 
-  //void save(const char * fname);
-  //void load(const char * fname);
+  void save(const char * fname);
+  void load(const char * fname);
 
 private:
 

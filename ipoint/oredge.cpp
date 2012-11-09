@@ -21,7 +21,10 @@ OrEdge::OrEdge(int o, int d, DelanayTriangulator * container) :
 OrEdge * OrEdge::adjacent()
 {
   if ( !adjacent_ )
+  {
     adjacent_ = container_->newOrEdge(dst_, org_);
+    adjacent_->adjacent_ = this;
+  }
 
   return adjacent_;
 }

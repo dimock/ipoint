@@ -9,7 +9,8 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   points_(points),edgeLength_(0)
 {
   //points_.clear();
-  //load("d:\\scenes\\3dpad\\stress_points.txt");
+  //load("d:\\scenes\\3dpad\\points.txt");
+  //save("d:\\scenes\\3dpad\\points.txt");
 
   cw_ = iMath::cw_dir(points_);
 
@@ -30,63 +31,47 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   }
 
   prebuild();
-
-//  save("d:\\scenes\\3dpad\\points.txt");
 }
 
-//void DelanayTriangulator::load(const char * fname)
-//{
-//  FILE * f = fopen(fname, "rt");
-//  char buff[256];
-//  boundaryN_ = 0; 
-//  bool stop = false;
-//  const char * sepr = "\t ,;{}\n\r";
-//  for ( ; fgets(buff, sizeof(buff), f); )
-//  {
-//    if ( buff[0] == '{' )
-//      continue;
-//
-//    if ( buff[0] == '}' )
-//    {
-//      stop = true;
-//      continue;
-//    }
-//
-//    char * s = strtok(buff, sepr);
-//    double v[3] = {0};
-//    for (int i = 0; s && i < 3; ++i)
-//    {
-//      float x;
-//      sscanf(s, "%f", &x);
-//      v[i] = x;
-//      s = strtok(0, sepr);
-//    }
-//    points_.push_back( Vec3f(v[0], v[1], v[2]) );
-//    if ( !stop )
-//      boundaryN_++;
-//  }
-//  fclose(f);
-//}
-//
-//void DelanayTriangulator::save(const char * fname)
-//{
-//  FILE * f = fopen(fname, "wt");
-//  fprintf(f, "{\n");
-//  for (size_t i = 0; i < boundaryN_; ++i)
-//  {
-//    const Vec3f & p = points_[i];
-//    fprintf(f, "  {%g, %g}\n", p.x, p.y);
-//  }
-//  fprintf(f, "}\n");
-//  for (size_t i = boundaryN_; i < points_.size(); ++i)
-//  {
-//    const Vec3f & p = points_[i];
-//    fprintf(f, "{\n");
-//    fprintf(f, "  {%g, %g}\n", p.x, p.y);
-//    fprintf(f, "}\n");
-//  }
-//  fclose(f);
-//}
+void DelanayTriangulator::load(const char * fname)
+{
+  FILE * f = fopen(fname, "rt");
+  char buff[256];
+  const char * sepr = "\t ,;{}\n\r";
+  for ( ; fgets(buff, sizeof(buff), f); )
+  {
+    if ( buff[0] == '{' )
+      continue;
+
+    if ( buff[0] == '}' )
+      break;
+
+    char * s = strtok(buff, sepr);
+    double v[3] = {0};
+    for (int i = 0; s && i < 3; ++i)
+    {
+      float x;
+      sscanf(s, "%f", &x);
+      v[i] = x;
+      s = strtok(0, sepr);
+    }
+    points_.push_back( Vec3f(v[0], v[1], v[2]) );
+  }
+  fclose(f);
+}
+
+void DelanayTriangulator::save(const char * fname)
+{
+  FILE * f = fopen(fname, "wt");
+  fprintf(f, "{\n");
+  for (size_t i = 0; i < points_.size(); ++i)
+  {
+    const Vec3f & p = points_[i];
+    fprintf(f, "  {%g, %g}\n", p.x, p.y);
+  }
+  fprintf(f, "}\n");
+  fclose(f);
+}
 
 DelanayTriangulator::~DelanayTriangulator()
 {
@@ -102,6 +87,19 @@ OrEdge * DelanayTriangulator::newOrEdge(int o, int d)
 
 bool DelanayTriangulator::triangulate(Triangles & tris)
 {
+  std::set<OrEdge*> used;
+  for (OrEdgesList::iterator i = edgesList_.begin(); i != edgesList_.end(); ++i)
+  {
+    OrEdge * e = i->get();
+    if ( used.find(e) != used.end() )
+      continue;
+
+    Triangle t = e->tri();
+    tris.push_back(t);
+    used.insert(e);
+    used.insert(e->prev());
+    used.insert(e->next());
+  }
 
   edgesList_.clear();
   vertsList_.clear();
@@ -111,16 +109,23 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
 
 void DelanayTriangulator::prebuild()
 {
+  OrEdge * curr = 0, * first = 0;
   for (size_t i = 0; i < points_.size(); ++i)
   {
     OrEdge * e = newOrEdge(i, (i+1) % points_.size());
     edgeLength_ += e->length();
+    if ( !first )
+      first = e;
+    else
+      curr->set_next(e);
+    curr = e;
   }
+  curr->set_next(first);
 
   if ( edgesList_.size() > 0 )
     edgeLength_ /= edgesList_.size();
 
-  intrusionPoint(edgesList_.begin()->get());
+  intrusionPoint(curr);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -128,6 +133,14 @@ void DelanayTriangulator::intrusionPoint(OrEdge * from)
 {
   OrEdge * cv_edge = findConvexEdge(from);
   if ( !cv_edge )
+    return;
+
+  // wrong topology!
+  if ( !cv_edge->prev() )
+    return;
+
+  // 1 triangle
+  if ( cv_edge->prev()->prev() == cv_edge->next() )
     return;
 
   OrEdge * ir_edge = findIntrudeEdge(cv_edge);
@@ -139,6 +152,7 @@ void DelanayTriangulator::intrusionPoint(OrEdge * from)
       return;
 
     OrEdge * pprev = prev->prev();
+
     OrEdge * e = newOrEdge(prev->org(), cv_edge->dst());
     OrEdge * a = e->adjacent();
 
@@ -214,8 +228,9 @@ OrEdge * DelanayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   double dist = 0;
 
   OrEdge * ir_edge = 0;
+  OrEdge * last = cv_edge->prev()->prev();
 
-  for (OrEdge * curr = cv_edge->next(); curr != cv_edge; curr = curr->next())
+  for (OrEdge * curr = cv_edge->next(); curr != last; curr = curr->next())
   {
     int n = curr->dst();
     const Vec3f & q = points_[n];
