@@ -2,8 +2,8 @@
 
 #include "rect.h"
 #include <list>
-#include <boost/shared_ptr.hpp>
 #include <imath.h>
+#include "oredge.h"
 
 struct Vertex
 {
@@ -21,88 +21,6 @@ struct Vertex
   }
 };
 
-class OrEdge
-{
-public:
-
-  OrEdge(const Points3f * points) : org_(-1), dst_(-1), points_(points)
-  {
-  }
-
-  OrEdge(int o, int d, Points3f * points) : org_(o), dst_(d), points_(points)
-  {
-    rect_.add((*points_)[o]);
-    rect_.add((*points_)[d]);
-
-    Vec3f dim  = rect_.dimension();
-    double delta = (dim.x + dim.y + dim.z) * 0.001;
-    rect_.inflate( Vec3f(delta, delta, delta) );
-  }
-
-  void flip()
-  {
-    std::swap(org_, dst_);
-  }
-
-  bool operator < (const OrEdge & other) const
-  {
-    return org_ < other.org_ || org_ == other.org_ && dst_ < other.dst_;
-  }
-
-  bool operator == (const OrEdge & other) const
-  {
-    return org_ == other.org_ && dst_ == other.dst_;
-  }
-
-  int org() const
-  {
-    return org_;
-  }
-
-  int dst() const
-  {
-    return dst_;
-  }
-
-  const Rect3f & rect() const
-  {
-    return rect_;
-  }
-
-  double length() const
-  {
-    return ((*points_)[org_] - (*points_)[dst_]).length();
-  }
-
-  bool intersect(const Rect3f & r) const
-  {
-    return rect_.intersecting(r);
-  }
-
-  bool isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const
-  {
-    return iMath::edges_isect((*points_)[org_], (*points_)[dst_], p0, p1, r, dist);
-  }
-
-  bool isectEdge(const OrEdge & other, Vec3f & r, double & dist) const
-  {
-    return isectEdge((*other.points_)[other.org_], (*other.points_)[other.dst_], r, dist);
-  }
-
-  bool touches(const OrEdge & other) const
-  {
-    return org_ == other.org_ || org_ == other.dst_ || dst_ == other.org_ || dst_ == other.dst_;
-  }
-
-private:
-
-  Rect3f rect_;
-  const Points3f * points_;
-  int org_, dst_;
-
-};
-
-typedef boost::shared_ptr<OrEdge> OrEdge_shared;
 typedef boost::shared_ptr<Vertex> Vertex_shared;
 
 struct OrEdgeWrp
@@ -224,6 +142,8 @@ typedef std::list<Vertex_shared> VerticesList;
 
 class DelanayTriangulator
 {
+  friend class OrEdge;
+
 public:
   
   DelanayTriangulator(Points3f & points);
@@ -248,6 +168,7 @@ private:
 
   bool canUsePoint(const double & err, size_t i, const OrEdge & edge, const Vec3f & pc, double & bestt) const;
 
+  OrEdge * newOrEdge(int o, int d);
 
   Points3f & points_;
   size_t boundaryN_;

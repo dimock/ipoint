@@ -429,6 +429,10 @@
 				RelativePath="main.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\oredge.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -544,7 +548,15 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\oredge.h"
+				>
+			</File>
+			<File
 				RelativePath="rect.h"
+				>
+			</File>
+			<File
+				RelativePath=".\utils.h"
 				>
 			</File>
 			<File
@@ -557,26 +569,6 @@
 			Filter="cpp;c;cxx;moc;h;def;odl;idl;res;"
 			UniqueIdentifier="{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}"
 			>
-			<File
-				RelativePath="debug\moc_ipoint.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
 			<File
 				RelativePath="release\moc_ipoint.cpp"
 				>
@@ -598,7 +590,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="debug\moc_iview.cpp"
+				RelativePath="debug\moc_ipoint.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -638,7 +630,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="debug\qrc_ipoint.cpp"
+				RelativePath="debug\moc_iview.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -670,6 +662,26 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="debug\qrc_ipoint.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					ExcludedFromBuild="true"
 					>
 					<Tool

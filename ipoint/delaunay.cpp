@@ -92,6 +92,14 @@ DelanayTriangulator::~DelanayTriangulator()
 {
 }
 
+OrEdge * DelanayTriangulator::newOrEdge(int o, int d)
+{
+  OrEdge * e = new OrEdge(o, d, this);
+  edgesList_.push_back(e);
+  edgesTree_->add(e.get());
+  return e;
+}
+
 void DelanayTriangulator::pushEdge(OrEdges & edges, OrEdge_shared e)
 {
   edges.insert(e.get());
