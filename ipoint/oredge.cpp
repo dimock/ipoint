@@ -1,13 +1,13 @@
 #include "oredge.h"
 #include "delaunay.h"
 
-OrEdge::OrEdge(DelanayTriangulator * container) : org_(-1), dst_(-1), container_(container),
-  next_(0), adjacent_(0)
+OrEdge::OrEdge(DelanayTriangulator * container) :
+  org_(-1), dst_(-1), container_(container), next_(0), adjacent_(0)
 {
 }
 
-OrEdge::OrEdge(int o, int d, DelanayTriangulator * container) : org_(o), dst_(d), container_(container),
-  next_(0), adjacent_(0)
+OrEdge::OrEdge(int o, int d, DelanayTriangulator * container) :
+  org_(o), dst_(d), container_(container), next_(0), adjacent_(0)
 {
   rect_.add((container_->points_)[o]);
   rect_.add((container_->points_)[d]);
@@ -101,7 +101,7 @@ bool OrEdge::split(int i)
   const Vec3f & p2 = container_->points_[rnext->dst()];
 
   const Vec3f & p = container_->points_[i];
-  if ( !iMath::inside_tri(p0, p1, p2, p, true) )
+  if ( !iMath::inside_tri(p0, p1, p2, p) )
     return false;
 
   {

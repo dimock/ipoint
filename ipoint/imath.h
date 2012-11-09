@@ -12,11 +12,11 @@ bool edge_halfline_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, co
 bool line_line_isect(const Vec3f & p, const Vec3f & rp, const Vec3f & q, const Vec3f & rq, Vec3f & r, double & dist);
 
 
-// returns signed distance, dist > 0 means q-line is on right side of p-line
-double dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & outside);
+// returns vectorized distance, v.length() = abs(dist), dir * cw > 0 == q is right to line
+Vec3f dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & outside);
 
-bool inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, const Vec3f & q, bool cw);
+bool inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, const Vec3f & q);
 
-bool cw(const Points3f & points);
+Vec3f cw_dir(const Points3f & points);
 
 }

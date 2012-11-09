@@ -151,27 +151,19 @@ public:
 
   bool triangulate(Triangles & tris);
 
-  void save(const char * fname);
-  void load(const char * fname);
+  //void save(const char * fname);
+  //void load(const char * fname);
 
 private:
 
-  void addPoints();
-  bool pointInside(const Vec3f & q) const;
-  
-  int  findTri(const OrEdge & edge);
-  void update(OrEdges & edges, int from, int to);
-
-  bool hasIsect(const OrEdge & oe) const;
-
-  void pushEdge(OrEdges & edges, OrEdge_shared e);
-
-  bool canUsePoint(const double & err, size_t i, const OrEdge & edge, const Vec3f & pc, double & bestt) const;
+  void prebuild();
+  void intrusionPoint(OrEdge * from);
+  OrEdge * findConvexEdge(OrEdge * from); // edge->org() is convex point
+  OrEdge * findIntrudeEdge(OrEdge * cv_edge); // edge->dst() is intrude point
 
   OrEdge * newOrEdge(int o, int d);
 
   Points3f & points_;
-  size_t boundaryN_;
   double edgeLength_;
 
   std::auto_ptr<OcTree<OrEdge>> edgesTree_;
@@ -179,4 +171,6 @@ private:
 
   OrEdgesList  edgesList_;
   VerticesList vertsList_;
+
+  Vec3f cw_;
 };

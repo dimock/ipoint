@@ -89,7 +89,7 @@ bool iMath::line_line_isect(const Vec3f & p, const Vec3f & rp, const Vec3f & q, 
   return true;
 }
 
-double iMath::dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & outside)
+Vec3f iMath::dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & outside)
 {
   Vec3f dir01 = p1 - p0;
   double s = dir01.length();
@@ -98,10 +98,10 @@ double iMath::dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, 
   Vec3f cp = dir01 ^ dir0q;
   double t = dir01*dir0q;
   outside = t < 0 || t > s;
-  return -cp.z;
+  return cp;
 }
 
-bool iMath::inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, const Vec3f & q, bool cw)
+bool iMath::inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, const Vec3f & q)
 {
   Vec3f p01 = p1 - p0;
   Vec3f p12 = p2 - p1;
@@ -115,18 +115,19 @@ bool iMath::inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, con
   Vec3f v1 = p12 ^ q1;
   Vec3f v2 = p20 ^ q2;
 
-  if ( v0.z < 0 == cw && v1.z < 0 == cw && v2.z < 0 == cw )
-    return true;
+  bool s0 = v0.z < 0;
+  bool s1 = v1.z < 0;
+  bool s2 = v2.z < 0;
 
-  return false;
+  return s0 == s1 && s0 == s2;
 }
 
-bool iMath::cw(const Points3f & points)
+Vec3f iMath::cw_dir(const Points3f & points)
 {
   if ( points.size() < 3 )
-    return false;
+    return Vec3f();
 
-  double s = 0;
+  Vec3f cw_dir;
   const Vec3f & p0 = points[0];
   for (size_t i = 1; i < points.size(); ++i)
   {
@@ -136,7 +137,7 @@ bool iMath::cw(const Points3f & points)
     const Vec3f & p1 = points[i];
     const Vec3f & p2 = points[j];
     Vec3f v = (p1 - p0) ^ (p2 - p0);
-    s += v.z;
+    cw_dir += v;
   }
-  return s < 0;
+  return cw_dir;
 }

@@ -49,6 +49,7 @@ public:
   // insert point with index i
   bool split(int i);
 
+  // get triangle representation
   Triangle tri() const;
   
   // comparision
