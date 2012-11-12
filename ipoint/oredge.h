@@ -50,7 +50,8 @@ public:
   OrEdge * set_next(OrEdge * e);
 
   // insert point with index i
-  bool split(int i);
+  bool splitTri(int i);
+  bool splitEdge(int i);
 
   // get triangle representation
   Triangle tri() const;
@@ -69,8 +70,10 @@ public:
   bool isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const;
   bool isectEdge(const OrEdge & other, Vec3f & r, double & dist) const;
 
-private:
 
+  // data
+private:
+  
   int org_, dst_;
   OrEdge * next_, * adjacent_;
   EdgesContainer * container_;
@@ -90,6 +93,7 @@ public:
   const Points3f & points() const { return points_; }
   Points3f & points() { return points_; }
   const OrEdgesList & edges() const { return edges_; }
+  OrEdgesList & edges() { return edges_; }
 
 private:
 

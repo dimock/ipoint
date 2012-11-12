@@ -8,8 +8,8 @@ using namespace iMath;
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   points_(points), container_(points_), edgeLength_(0)
 {
-  //points_.clear();
-  //load("d:\\scenes\\3dpad\\points3.txt");
+  points_.clear();
+  load("d:\\scenes\\3dpad\\points4.txt");
   //save("d:\\scenes\\3dpad\\points.txt");
 
   cw_ = iMath::cw_dir(points_);
@@ -70,7 +70,72 @@ DelanayTriangulator::~DelanayTriangulator()
 {
 }
 
-bool DelanayTriangulator::triangulate(Triangles & tris)
+void DelanayTriangulator::triangulate(Triangles & tris)
+{
+  EdgesQueueSorted eg_queue;
+
+  std::set<OrEdge*> adj_used;
+  for (OrEdgesList::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
+  {
+    OrEdge * e = i->get();
+    if ( adj_used.find(e) != adj_used.end() )
+      continue;
+
+    eg_queue.push(e);
+    if ( e->get_adjacent() )
+      adj_used.insert(e->get_adjacent());
+  }
+
+  double threshold = edgeLength_*1.5;
+
+  for ( ; !eg_queue.empty(); )
+  {
+    OrEdge * e = eg_queue.top();
+    eg_queue.pop();
+
+    OrEdge * adj = e->get_adjacent();
+    if ( !adj )
+      continue;
+
+    double l = e->length();
+    if ( l < threshold )
+      continue;
+
+    const Vec3f & p0 = points_.at(e->org());
+    const Vec3f & p1 = points_.at(e->dst());
+    Vec3f p = (p0 + p1) * 0.5;
+    int index = (int)points_.size();
+    points_.push_back(p);
+
+    if ( !e->splitEdge(index) )
+      throw std::runtime_error("couldn't split edge");
+
+    OrEdge * a1 = e->prev();
+    OrEdge * b1 = a1->get_adjacent();
+    OrEdge * c1 = b1->prev();
+
+    eg_queue.push(a1);
+//    eg_queue.push(b1);
+    eg_queue.push(c1);
+
+    OrEdge * a2 = adj->next();
+    OrEdge * b2 = a2->get_adjacent();
+    OrEdge * c2 = b2->next();
+
+    eg_queue.push(a2);
+//      eg_queue.push(b2);
+//      eg_queue.push(c2);
+
+    if ( c2 != c1->get_adjacent() )
+      throw std::runtime_error("wrong topology");
+
+    eg_queue.push(e);
+  }
+
+  postbuild(tris);
+}
+
+void DelanayTriangulator::postbuild(Triangles & tris)
 {
   std::set<const OrEdge *> used;
   for (OrEdgesList::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
@@ -85,8 +150,6 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
     used.insert(e->prev());
     used.insert(e->next());
   }
-
-  return true;
 }
 
 void DelanayTriangulator::prebuild()

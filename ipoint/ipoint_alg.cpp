@@ -143,7 +143,16 @@ bool IntrusionPointAlgorithm::triangulate()
     return true;
 
   DelanayTriangulator dtr(points_);
-  return dtr.triangulate(tris_);
+
+  try
+  {
+    dtr.triangulate(tris_);
+    return true;
+  }
+  catch ( std::runtime_error & e )
+  {
+    return false;
+  }
 }
 
 bool IntrusionPointAlgorithm::triangulation(std::vector<Triangle> *& tris)

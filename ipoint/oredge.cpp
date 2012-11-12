@@ -92,7 +92,7 @@ OrEdge * OrEdge::set_next(OrEdge * e)
   return next;
 }
 
-bool OrEdge::split(int i)
+bool OrEdge::splitTri(int i)
 {
   OrEdge * rnext = next();
   OrEdge * rprev = prev();
@@ -128,6 +128,56 @@ bool OrEdge::split(int i)
   rprev->set_next(a3);
   a3->set_next(b3);
   b3->set_next(rprev);
+
+  return true;
+}
+
+bool OrEdge::splitEdge(int i)
+{
+  OrEdge * rprev = prev();
+  OrEdge * rnext = next();
+
+  if ( !rprev || !rnext || rprev != rnext->next() )
+    return false;
+
+  int p1 = rnext->dst();
+
+  OrEdge * a1 = container_->new_edge(p1, i);
+  OrEdge * b1 = a1->create_adjacent();
+  OrEdge * c1 = container_->new_edge(org(), i);
+
+  a1->set_next(this);
+  rnext->set_next(a1);
+
+  b1->set_next(rprev);
+  rprev->set_next(c1);
+  c1->set_next(b1);
+
+  this->org_ = i;
+
+  if ( !get_adjacent() )
+    return true;
+
+  OrEdge * lprev = get_adjacent()->prev();
+  OrEdge * lnext = get_adjacent()->next();
+
+  if ( !lprev || !lnext || lprev != lnext->next() )
+    return false;
+
+  int p2 = lnext->dst();
+
+  OrEdge * a2 = container_->new_edge(i, p2);
+  OrEdge * b2 = a2->create_adjacent();
+  OrEdge * c2 = c1->create_adjacent();
+
+  a2->set_next(lprev);
+  get_adjacent()->set_next(a2);
+
+  b2->set_next(c2);
+  c2->set_next(lnext);
+  lnext->set_next(b2);
+
+  get_adjacent()->dst_ = i;
 
   return true;
 }

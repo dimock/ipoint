@@ -1,6 +1,18 @@
 #pragma once
 
 #include "oredge.h"
+#include <queue>
+
+class EdgesCmpr
+{
+public:
+  EdgesCmpr() {}
+
+  bool operator () (const OrEdge * pe0, const OrEdge * pe1) const
+  {
+    return pe0->length() < pe1->length();
+  }
+};
 
 class DelanayTriangulator
 {
@@ -11,7 +23,7 @@ public:
   DelanayTriangulator(Points3f & points);
   virtual ~DelanayTriangulator();
 
-  bool triangulate(Triangles & tris);
+  void triangulate(Triangles & tris);
 
   void save(const char * fname);
   void load(const char * fname);
@@ -19,6 +31,7 @@ public:
 private:
 
   void prebuild();
+  void postbuild(Triangles &);
   void intrusionPoint(OrEdge * from);
 
   // edge->org() is convex point
@@ -29,6 +42,8 @@ private:
 
   Points3f & points_;
   double edgeLength_;
+
+  typedef std::priority_queue<OrEdge*, std::vector<OrEdge*>, EdgesCmpr> EdgesQueueSorted;
 
   EdgesContainer container_;
 
