@@ -38,6 +38,7 @@ public:
 
   // topology
   OrEdge * get_adjacent();
+  const OrEdge * get_adjacent() const;
   OrEdge * create_adjacent();
   void clear_adjacent();
 
@@ -64,11 +65,15 @@ public:
   // geometry
   Rect3f rect() const;
   double length() const;
+  Vec3f  dir() const;
 
   // math
   bool intersect(const Rect3f & r) const;
   bool isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const;
   bool isectEdge(const OrEdge & other, Vec3f & r, double & dist) const;
+
+  // delaunay critera
+  bool needRotate(const Vec3f & cw, double threshold) const;
 
 
   // data

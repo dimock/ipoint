@@ -31,6 +31,9 @@ public:
 private:
 
   void prebuild();
+  int  makeDelaunay();
+  void makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdge*> & eg_list, double threshold);
+  void split();
   void postbuild(Triangles &);
   void intrusionPoint(OrEdge * from);
 
@@ -42,6 +45,8 @@ private:
 
   Points3f & points_;
   double edgeLength_;
+  double rotateThreshold_;
+  double splitThreshold_;
 
   typedef std::priority_queue<OrEdge*, std::vector<OrEdge*>, EdgesCmpr> EdgesQueueSorted;
 

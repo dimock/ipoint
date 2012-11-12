@@ -147,6 +147,7 @@ bool IntrusionPointAlgorithm::triangulate()
   try
   {
     dtr.triangulate(tris_);
+    recalc();
     return true;
   }
   catch ( std::runtime_error & e )

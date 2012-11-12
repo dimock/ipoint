@@ -49,6 +49,11 @@ struct Vec3f
         return Vec3f(x - v.x, y - v.y, z - v.z);
     }
 
+    Vec3f operator - () const
+    {
+      return  Vec3f(-x, -y, -z);
+    }
+
     Vec3f & operator += (const Vec3f & v)
     {
         x += v.x;

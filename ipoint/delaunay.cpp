@@ -6,11 +6,11 @@
 using namespace iMath;
 
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
-  points_(points), container_(points_), edgeLength_(0)
+  points_(points), container_(points_), edgeLength_(0), rotateThreshold_(0), splitThreshold_(0)
 {
   points_.clear();
   load("d:\\scenes\\3dpad\\points4.txt");
-  //save("d:\\scenes\\3dpad\\points.txt");
+//  save("d:\\scenes\\3dpad\\points.txt");
 
   cw_ = iMath::cw_dir(points_);
 
@@ -72,38 +72,165 @@ DelanayTriangulator::~DelanayTriangulator()
 
 void DelanayTriangulator::triangulate(Triangles & tris)
 {
-  EdgesQueueSorted eg_queue;
+  for ( ;; )
+  {
+    int n = makeDelaunay();
+    if ( !n )
+      break;
+  }
 
+  split();
+
+  for ( ;;)
+  {
+    int n = makeDelaunay();
+    if ( !n )
+      break;
+  }
+
+  postbuild(tris);
+}
+
+int DelanayTriangulator::makeDelaunay()
+{
+  std::set<OrEdge*> used;
   std::set<OrEdge*> adj_used;
+  for (OrEdgesList::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
+  {
+    OrEdge * e = i->get();
+    if ( adj_used.find(e) != adj_used.end() || !e->get_adjacent() )
+      continue;
+
+    used.insert(e);
+    adj_used.insert(e->get_adjacent());
+  }
+
+  int num = 0;
+  for (std::set<OrEdge*>::iterator i = used.begin(); i != used.end(); ++i)
+  {
+    OrEdge * e = *i;
+    if ( !e->needRotate(cw_, rotateThreshold_) )
+      continue;
+
+    e->rotate();
+    num++;
+  }
+
+  return num;
+}
+
+void DelanayTriangulator::makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdge*> & eg_list, double threshold)
+{
+  for ( ; !edges.empty(); )
+  {
+    std::set<OrEdge*>::iterator i = edges.begin();
+    OrEdge * e = *i;
+    edges.erase(i);
+
+    if ( !e->needRotate(cw_, rotateThreshold_) )
+      continue;
+
+    e->rotate();
+
+    OrEdge * rnext = e->next();
+    OrEdge * rprev = e->prev();
+
+    OrEdge * lnext = e->get_adjacent()->next();
+    OrEdge * lprev = e->get_adjacent()->prev();
+
+    edges.insert(rnext);
+    edges.insert(rprev);
+    edges.insert(lnext);
+    edges.insert(lprev);
+
+    if ( rnext->get_adjacent() && rnext->length() > threshold )
+      eg_list.insert(rnext);
+    if ( rprev->get_adjacent() && rprev->length() > threshold )
+      eg_list.insert(rprev);
+    if ( lprev->get_adjacent() && lprev->length() > threshold )
+      eg_list.insert(lprev);
+    if ( lnext->get_adjacent() && lnext->length() > threshold )
+      eg_list.insert(lnext);
+  }
+}
+
+void DelanayTriangulator::split()
+{
+  std::set<OrEdge*> adj_used;
+ // EdgesQueueSorted eg_queue;
+
+  std::set<OrEdge *> eg_list;
+
   for (OrEdgesList::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
   {
     OrEdge * e = i->get();
     if ( adj_used.find(e) != adj_used.end() )
       continue;
 
-    eg_queue.push(e);
-    if ( e->get_adjacent() )
-      adj_used.insert(e->get_adjacent());
+    if ( e->get_adjacent() && e->length() > splitThreshold_ )
+    {
+      eg_list.insert(e);
+      if ( e->get_adjacent() )
+        adj_used.insert(e->get_adjacent());
+    }
   }
 
-  double threshold = edgeLength_*1.5;
-
-  for ( ; !eg_queue.empty(); )
+  int itersN = 0;
+  for ( ; !eg_list.empty(); ++itersN)
   {
-    OrEdge * e = eg_queue.top();
-    eg_queue.pop();
+    std::set<OrEdge *>::iterator iter = eg_list.begin();
+    OrEdge * e = *iter;
+    eg_list.erase(iter);
 
     OrEdge * adj = e->get_adjacent();
     if ( !adj )
       continue;
 
     double l = e->length();
-    if ( l < threshold )
+    if ( l < splitThreshold_ )
       continue;
+
+    int o = e->org();
+    int d = e->dst();
+    if ( o == 101 && d == 995 )
+    {
+      int ttt = 0;
+    }
 
     const Vec3f & p0 = points_.at(e->org());
     const Vec3f & p1 = points_.at(e->dst());
     Vec3f p = (p0 + p1) * 0.5;
+
+    // thin triangle?
+    const Vec3f & q0 = points_.at(e->next()->dst());
+    const Vec3f & q1 = points_.at(e->get_adjacent()->next()->dst());
+
+    double stopThreshold = splitThreshold_*0.1;
+
+    double dist0 = (q0 - p).length();
+    double dist1 = (q1 - p).length();
+    if ( dist0 < stopThreshold || dist1 < stopThreshold )
+      continue;
+
+    bool outside;
+    double h = iMath::dist_to_line(p0, q0, p, outside).length();
+    if ( h < stopThreshold )
+      continue;
+    
+    h = iMath::dist_to_line(p1, q0, p, outside).length();
+    if ( h < stopThreshold )
+      continue;
+
+    h = iMath::dist_to_line(p0, q1, p, outside).length();
+    if ( h < stopThreshold )
+      continue;
+
+    h = iMath::dist_to_line(p1, q1, p, outside).length();
+    if ( h < stopThreshold )
+      continue;
+
+
+
     int index = (int)points_.size();
     points_.push_back(p);
 
@@ -114,25 +241,47 @@ void DelanayTriangulator::triangulate(Triangles & tris)
     OrEdge * b1 = a1->get_adjacent();
     OrEdge * c1 = b1->prev();
 
-    eg_queue.push(a1);
-//    eg_queue.push(b1);
-    eg_queue.push(c1);
-
     OrEdge * a2 = adj->next();
     OrEdge * b2 = a2->get_adjacent();
     OrEdge * c2 = b2->next();
 
-    eg_queue.push(a2);
-//      eg_queue.push(b2);
-//      eg_queue.push(c2);
-
     if ( c2 != c1->get_adjacent() )
       throw std::runtime_error("wrong topology");
 
-    eg_queue.push(e);
-  }
+    std::list<OrEdge*> egs;
+    egs.push_back(a1);
+    egs.push_back(c1);
+    egs.push_back(a2);
+    egs.push_back(e);
 
-  postbuild(tris);
+    OrEdge * rnext = e->next();
+    OrEdge * lprev = adj->prev();
+    OrEdge * c2next = c2->next();
+
+    std::set<OrEdge*> edges;
+    edges.insert(e);
+    edges.insert(c1);
+    edges.insert(b1);
+    edges.insert(rnext);
+    edges.insert(lprev);
+    edges.insert(c2next);
+    makeDelaunay(edges, eg_list, splitThreshold_);
+
+    for (std::list<OrEdge*>::iterator i = egs.begin(); i != egs.end(); ++i)
+    {
+      OrEdge * e1 = *i;
+      double l1 = e1->length();
+      if ( l1 == 0 )
+      {
+        int rrr = 0;
+        return;
+      }
+      if ( !e1->get_adjacent() || l1 < splitThreshold_ )
+        continue;
+
+      eg_list.insert(e1);
+    }
+  }
 }
 
 void DelanayTriangulator::postbuild(Triangles & tris)
@@ -169,6 +318,10 @@ void DelanayTriangulator::prebuild()
 
   if ( container_.edges().size() > 0 )
     edgeLength_ /= container_.edges().size();
+
+  //edgeLength_  = 0.047255099481883819;
+  rotateThreshold_ = edgeLength_*0.0001;
+  splitThreshold_ = edgeLength_*1.5;
 
   intrusionPoint(curr);
 }

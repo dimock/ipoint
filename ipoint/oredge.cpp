@@ -27,6 +27,11 @@ OrEdge * OrEdge::get_adjacent()
   return adjacent_;
 }
 
+const OrEdge * OrEdge::get_adjacent() const
+{
+  return adjacent_;
+}
+
 void OrEdge::clear_adjacent()
 {
   if ( adjacent_ )
@@ -50,7 +55,7 @@ void OrEdge::rotate()
   if ( !rnext || !rprev || !lnext || !lprev )
     return;
 
-  if ( rprev->next() != this || lprev != get_adjacent() )
+  if ( rprev->next() != this || lprev->next() != get_adjacent() )
     return;
 
   if ( rnext->next() != rprev || lnext->next() != lprev )
@@ -62,9 +67,15 @@ void OrEdge::rotate()
   lnext->set_next(this);
 
   // rotate adjacent 90 deg CW
-  adjacent_->set_next(lprev);
+  get_adjacent()->set_next(lprev);
   lprev->set_next(rnext);
   rnext->set_next(get_adjacent());
+
+  this->org_ = lprev->org();
+  this->dst_ = rprev->org();
+
+  get_adjacent()->org_ = this->dst();
+  get_adjacent()->dst_ = this->org();
 }
 
 OrEdge * OrEdge::next() const
@@ -134,6 +145,9 @@ bool OrEdge::splitTri(int i)
 
 bool OrEdge::splitEdge(int i)
 {
+  if ( !get_adjacent() )
+    return false;
+
   OrEdge * rprev = prev();
   OrEdge * rnext = next();
 
@@ -154,9 +168,6 @@ bool OrEdge::splitEdge(int i)
   c1->set_next(b1);
 
   this->org_ = i;
-
-  if ( !get_adjacent() )
-    return true;
 
   OrEdge * lprev = get_adjacent()->prev();
   OrEdge * lnext = get_adjacent()->next();
@@ -217,6 +228,13 @@ double OrEdge::length() const
   return (container_->points().at(org()) - container_->points().at(dst())).length();
 }
 
+Vec3f OrEdge::dir() const
+{
+  Vec3f r = container_->points().at(org()) - container_->points().at(dst());
+  r.norm();
+  return r;
+}
+
 // math
 bool OrEdge::intersect(const Rect3f & r) const
 {
@@ -233,7 +251,49 @@ bool OrEdge::isectEdge(const OrEdge & other, Vec3f & r, double & dist) const
   return isectEdge( other.container_->points().at(other.org()), other.container_->points().at(other.dst()), r, dist);
 }
 
+bool OrEdge::needRotate(const Vec3f & cw, double threshold) const
+{
+  if ( !get_adjacent() )
+    return false;
 
+  const Vec3f & po = container_->points().at(org());
+  const Vec3f & pd = container_->points().at(dst());
+
+  const Vec3f & pr = container_->points().at(next()->dst());
+  const Vec3f & pl = container_->points().at(get_adjacent()->next()->dst());
+
+  bool outside;
+  Vec3f dist_r = iMath::dist_to_line(po, pd, pr, outside);
+  if ( dist_r.length() < threshold )
+    return false;
+
+  Vec3f dist_l = iMath::dist_to_line(po, pd, pl, outside);
+  if ( dist_l.length() < threshold )
+    return false;
+
+  Vec3f r1 = -next()->dir();
+  Vec3f r2 = prev()->dir();
+
+  Vec3f r3 = -get_adjacent()->next()->dir();
+  Vec3f r4 = get_adjacent()->prev()->dir();
+
+  Vec3f x1 = r1^r4;
+  Vec3f x2 = r3^r2;
+
+  if ( x1*cw <= 0 || x2*cw <= 0 )
+    return false;
+
+  double sa, ca;
+  iMath::sincos(r1, r2, sa, ca);
+
+  double sb, cb;
+  iMath::sincos(r3, r4, sb, cb);
+
+  double dln = sa*cb + sb*ca;
+  return dln < 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
 OrEdge * EdgesContainer::new_edge(int o, int d)
 {
   OrEdge_shared edge(new OrEdge(o, d, this));

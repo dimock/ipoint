@@ -141,3 +141,9 @@ Vec3f iMath::cw_dir(const Points3f & points)
   }
   return cw_dir;
 }
+
+void iMath::sincos(const Vec3f & r1, const Vec3f & r2, double & s, double & c)
+{
+  c = r1 * r2;
+  s = sqrt(1.0 - c*c);
+}

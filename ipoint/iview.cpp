@@ -51,7 +51,10 @@ void ViewWindow::recalcScreen()
       s.x = r;
     else
       s.y = 1/r;
-    screen_.rect.set(Vec3f(0,0,0), Vec3f(1,1,1));
+    //if ( alg_.getRect().isValid() )
+    //  screen_.rect = alg_.getRect();
+    //else
+      screen_.rect.set(Vec3f(0,0,0), Vec3f(1,1,1));
     screen_.rect.scale(s);
   }
 }
