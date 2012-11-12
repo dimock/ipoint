@@ -6,10 +6,10 @@
 using namespace iMath;
 
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
-  points_(points),edgeLength_(0)
+  points_(points), container_(points_), edgeLength_(0)
 {
   //points_.clear();
-  //load("d:\\scenes\\3dpad\\points.txt");
+  //load("d:\\scenes\\3dpad\\points3.txt");
   //save("d:\\scenes\\3dpad\\points.txt");
 
   cw_ = iMath::cw_dir(points_);
@@ -17,25 +17,15 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   if ( points_.size() < 3 )
     throw std::logic_error("not enough points for triangulation");
 
-  int D = (int)(log((double)points_.size())/(2*log(2.0))+1.0);
-  if ( D > 6 )
-    D = 6;
-
-  edgesTree_.reset( new OcTree<OrEdge>(&points_, D) );
-  vertexTree_.reset( new OcTree<Vertex>(&points_, D) );
-
-  for (size_t i = 0; i < points_.size(); ++i)
-  {
-    vertsList_.push_back( Vertex_shared(new Vertex(i, &points_)) );
-    vertexTree_->add(vertsList_.back().get());
-  }
-
   prebuild();
 }
 
 void DelanayTriangulator::load(const char * fname)
 {
   FILE * f = fopen(fname, "rt");
+  if ( !f )
+    return;
+
   char buff[256];
   const char * sepr = "\t ,;{}\n\r";
   for ( ; fgets(buff, sizeof(buff), f); )
@@ -63,6 +53,9 @@ void DelanayTriangulator::load(const char * fname)
 void DelanayTriangulator::save(const char * fname)
 {
   FILE * f = fopen(fname, "wt");
+  if ( !f )
+    return;
+
   fprintf(f, "{\n");
   for (size_t i = 0; i < points_.size(); ++i)
   {
@@ -77,20 +70,12 @@ DelanayTriangulator::~DelanayTriangulator()
 {
 }
 
-OrEdge * DelanayTriangulator::newOrEdge(int o, int d)
-{
-  OrEdge_shared e(new OrEdge(o, d, this));
-  edgesList_.push_back(e);
-  edgesTree_->add(e.get());
-  return e.get();
-}
-
 bool DelanayTriangulator::triangulate(Triangles & tris)
 {
-  std::set<OrEdge*> used;
-  for (OrEdgesList::iterator i = edgesList_.begin(); i != edgesList_.end(); ++i)
+  std::set<const OrEdge *> used;
+  for (OrEdgesList::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
   {
-    OrEdge * e = i->get();
+    const OrEdge * e = i->get();
     if ( used.find(e) != used.end() )
       continue;
 
@@ -101,9 +86,6 @@ bool DelanayTriangulator::triangulate(Triangles & tris)
     used.insert(e->next());
   }
 
-  edgesList_.clear();
-  vertsList_.clear();
-
   return true;
 }
 
@@ -112,7 +94,7 @@ void DelanayTriangulator::prebuild()
   OrEdge * curr = 0, * first = 0;
   for (size_t i = 0; i < points_.size(); ++i)
   {
-    OrEdge * e = newOrEdge(i, (i+1) % points_.size());
+    OrEdge * e = container_.new_edge(i, (i+1) % points_.size());
     edgeLength_ += e->length();
     if ( !first )
       first = e;
@@ -122,8 +104,8 @@ void DelanayTriangulator::prebuild()
   }
   curr->set_next(first);
 
-  if ( edgesList_.size() > 0 )
-    edgeLength_ /= edgesList_.size();
+  if ( container_.edges().size() > 0 )
+    edgeLength_ /= container_.edges().size();
 
   intrusionPoint(curr);
 }
@@ -153,8 +135,8 @@ void DelanayTriangulator::intrusionPoint(OrEdge * from)
 
     OrEdge * pprev = prev->prev();
 
-    OrEdge * e = newOrEdge(prev->org(), cv_edge->dst());
-    OrEdge * a = e->adjacent();
+    OrEdge * e = container_.new_edge(prev->org(), cv_edge->dst());
+    OrEdge * a = e->create_adjacent();
 
     pprev->set_next(e);
     e->set_next(next);
@@ -172,8 +154,8 @@ void DelanayTriangulator::intrusionPoint(OrEdge * from)
     if ( !prev || !next )
       return;
 
-    OrEdge * e = newOrEdge(ir_edge->dst(), cv_edge->org());
-    OrEdge * a = e->adjacent();
+    OrEdge * e = container_.new_edge(ir_edge->dst(), cv_edge->org());
+    OrEdge * a = e->create_adjacent();
 
     e->set_next(cv_edge);
     ir_edge->set_next(e);

@@ -1,9 +1,11 @@
 #pragma once
 
 #include "rect.h"
+#include <list>
+#include <imath.h>
 #include <boost/shared_ptr.hpp>
 
-class DelanayTriangulator;
+class EdgesContainer;
 
 /**
     Oriented edge structure
@@ -26,8 +28,8 @@ class OrEdge
 {
 public:
 
-  OrEdge(DelanayTriangulator * container);
-  OrEdge(int o, int d, DelanayTriangulator * container);
+  OrEdge(EdgesContainer * container);
+  OrEdge(int o, int d, EdgesContainer * container);
 
 
   // structure
@@ -35,7 +37,8 @@ public:
   int dst() const { return dst_; }
 
   // topology
-  OrEdge * adjacent();
+  OrEdge * get_adjacent();
+  OrEdge * create_adjacent();
   void clear_adjacent();
 
   // rotate this & adjacent edges 90 deg CW
@@ -58,7 +61,7 @@ public:
   bool touches(const OrEdge & other) const;
 
   // geometry
-  const Rect3f & rect() const;
+  Rect3f rect() const;
   double length() const;
 
   // math
@@ -68,11 +71,28 @@ public:
 
 private:
 
-  Rect3f rect_;
-  double length_;
-  DelanayTriangulator * container_;
   int org_, dst_;
   OrEdge * next_, * adjacent_;
+  EdgesContainer * container_;
 };
 
 typedef boost::shared_ptr<OrEdge> OrEdge_shared;
+typedef std::list<OrEdge_shared> OrEdgesList;
+
+class EdgesContainer
+{
+public:
+
+  EdgesContainer(Points3f & points) : points_(points)
+  {}
+
+  OrEdge * new_edge(int o, int d);
+  const Points3f & points() const { return points_; }
+  Points3f & points() { return points_; }
+  const OrEdgesList & edges() const { return edges_; }
+
+private:
+
+  OrEdgesList edges_;
+  Points3f & points_;
+};

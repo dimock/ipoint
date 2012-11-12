@@ -1,55 +1,56 @@
 #include "oredge.h"
 #include "delaunay.h"
 
-OrEdge::OrEdge(DelanayTriangulator * container) :
+OrEdge::OrEdge(EdgesContainer * container) :
   org_(-1), dst_(-1), container_(container), next_(0), adjacent_(0)
 {
 }
 
-OrEdge::OrEdge(int o, int d, DelanayTriangulator * container) :
+OrEdge::OrEdge(int o, int d, EdgesContainer * container) :
   org_(o), dst_(d), container_(container), next_(0), adjacent_(0)
 {
-  rect_.add((container_->points_)[o]);
-  rect_.add((container_->points_)[d]);
-
-  Vec3f dim  = rect_.dimension();
-  double delta = (dim.x + dim.y + dim.z) * 0.001;
-  rect_.inflate( Vec3f(delta, delta, delta) );
-  length_ = dim.length();
 }
 
-OrEdge * OrEdge::adjacent()
+OrEdge * OrEdge::create_adjacent()
 {
   if ( !adjacent_ )
   {
-    adjacent_ = container_->newOrEdge(dst_, org_);
+    adjacent_ = container_->new_edge(dst(), org());
     adjacent_->adjacent_ = this;
   }
 
   return adjacent_;
 }
 
+OrEdge * OrEdge::get_adjacent()
+{
+  return adjacent_;
+}
+
 void OrEdge::clear_adjacent()
 {
+  if ( adjacent_ )
+    adjacent_->adjacent_ = 0;
+
   adjacent_ = 0;
 }
 
 // topology
 void OrEdge::rotate()
 {
-  if ( !adjacent_ )
+  if ( !get_adjacent() )
     return;
 
   OrEdge * rnext = next();
   OrEdge * rprev = prev();
-  OrEdge * lnext = adjacent()->next();
-  OrEdge * lprev = adjacent()->prev();
+  OrEdge * lnext = get_adjacent()->next();
+  OrEdge * lprev = get_adjacent()->prev();
 
   // verify topology
   if ( !rnext || !rprev || !lnext || !lprev )
     return;
 
-  if ( rprev->next() != this || lprev != adjacent() )
+  if ( rprev->next() != this || lprev != get_adjacent() )
     return;
 
   if ( rnext->next() != rprev || lnext->next() != lprev )
@@ -63,7 +64,7 @@ void OrEdge::rotate()
   // rotate adjacent 90 deg CW
   adjacent_->set_next(lprev);
   lprev->set_next(rnext);
-  rnext->set_next(adjacent_);
+  rnext->set_next(get_adjacent());
 }
 
 OrEdge * OrEdge::next() const
@@ -73,13 +74,13 @@ OrEdge * OrEdge::next() const
 
 OrEdge * OrEdge::prev() const
 {
-  OrEdge * prev = next_;
+  OrEdge * prev = next();
   while ( prev )
   {
-    if ( prev->dst_ == org_ )
+    if ( prev->dst() == org() )
       break;
 
-    prev = prev->next_;
+    prev = prev->next();
   }
   return prev;
 }
@@ -99,88 +100,93 @@ bool OrEdge::split(int i)
   if ( !rnext || !rprev || rnext->next() != rprev )
     return false;
 
-  const Vec3f & p0 = container_->points_[org_];
-  const Vec3f & p1 = container_->points_[dst_];
-  const Vec3f & p2 = container_->points_[rnext->dst()];
+  const Vec3f & p0 = container_->points().at(org());
+  const Vec3f & p1 = container_->points().at(dst());
+  const Vec3f & p2 = container_->points().at(rnext->dst());
 
-  const Vec3f & p = container_->points_[i];
+  const Vec3f & p = container_->points().at(i);
   if ( !iMath::inside_tri(p0, p1, p2, p) )
     return false;
 
-  {
-    OrEdge * a = container_->newOrEdge(dst_, i);
-    OrEdge * b = container_->newOrEdge(i, org_);
-    
-    set_next(a);
-    a->set_next(b);
-    b->set_next(this);
-  }
+  OrEdge * a1 = container_->new_edge(dst(), i);
+  OrEdge * b1 = container_->new_edge(i, org());
+  
+  set_next(a1);
+  a1->set_next(b1);
+  b1->set_next(this);
 
-  {
-    OrEdge * a = container_->newOrEdge(rnext->dst(), i);
-    OrEdge * b = next()->adjacent();
+  OrEdge * a2 = container_->new_edge(rnext->dst(), i);
+  OrEdge * b2 = a1->create_adjacent();
 
-    rnext->set_next(a);
-    a->set_next(b);
-    b->set_next(rnext);
-  }
+  rnext->set_next(a2);
+  a2->set_next(b2);
+  b2->set_next(rnext);
 
-  {
-    OrEdge * a = prev()->adjacent();
-    OrEdge * b = rnext->next()->adjacent();
+  OrEdge * a3 = b1->create_adjacent();
+  OrEdge * b3 = a2->create_adjacent();
 
-    rprev->set_next(a);
-    a->set_next(b);
-    b->set_next(rprev);
-  }
+  rprev->set_next(a3);
+  a3->set_next(b3);
+  b3->set_next(rprev);
 
   return true;
 }
 
 Triangle OrEdge::tri() const
 {
-  return Triangle(org_, dst_, next()->dst());
+  return Triangle(org(), dst(), next()->dst());
 }
 
 // comparision
 bool OrEdge::operator < (const OrEdge & other) const
 {
-  return org_ < other.org_ || org_ == other.org_ && dst_ < other.dst_;
+  return org() < other.org() || org() == other.org() && dst() < other.dst();
 }
 
 bool OrEdge::operator == (const OrEdge & other) const
 {
-  return org_ == other.org_ && dst_ == other.dst_;
+  return org() == other.org() && dst() == other.dst();
 }
 
 bool OrEdge::touches(const OrEdge & other) const
 {
-  return org_ == other.org_ || org_ == other.dst_ || dst_ == other.org_ || dst_ == other.dst_;
+  return org() == other.org() || org() == other.dst() || dst() == other.org() || dst() == other.dst();
 }
 
 // geometry
-const Rect3f & OrEdge::rect() const
+Rect3f OrEdge::rect() const
 {
-  return rect_;
+  Rect3f rect;
+  rect.add(container_->points().at(org()));
+  rect.add(container_->points().at(dst()));
+  return rect;
 }
 
 double OrEdge::length() const
 {
-  return length_;
+  return (container_->points().at(org()) - container_->points().at(dst())).length();
 }
 
 // math
 bool OrEdge::intersect(const Rect3f & r) const
 {
-  return rect_.intersecting(r);
+  return rect().intersecting(r);
 }
 
 bool OrEdge::isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const
 {
-  return iMath::edges_isect((container_->points_)[org_], (container_->points_)[dst_], p0, p1, r, dist);
+  return iMath::edges_isect(container_->points().at(org()), container_->points().at(dst()), p0, p1, r, dist);
 }
 
 bool OrEdge::isectEdge(const OrEdge & other, Vec3f & r, double & dist) const
 {
-  return isectEdge((other.container_->points_)[other.org_], (other.container_->points_)[other.dst_], r, dist);
+  return isectEdge( other.container_->points().at(other.org()), other.container_->points().at(other.dst()), r, dist);
+}
+
+
+OrEdge * EdgesContainer::new_edge(int o, int d)
+{
+  OrEdge_shared edge(new OrEdge(o, d, this));
+  edges_.push_back(edge);
+  return edge.get();
 }
