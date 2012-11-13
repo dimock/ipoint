@@ -56,21 +56,42 @@ void IntrusionPointWindow::createToolBar()
 
 void IntrusionPointWindow::createStatusBar()
 {
-  statusLabel_ = new QLabel(tr("Mouse position"));
-  statusLabel_->setAlignment(Qt::AlignHCenter);
-  statusLabel_->setMinimumSize(statusLabel_->sizeHint());
+  statusLabelMouse_ = new QLabel(tr("Mouse position"));
+  statusLabelMouse_->setAlignment(Qt::AlignHCenter);
+  statusLabelMouse_->setMinimumSize(statusLabelMouse_->sizeHint());
   mousePosLabel_ = new QLabel(tr("{0, 0}"));
+  mousePosLabel_->setMinimumWidth(200);
   mousePosLabel_->setIndent(5);
-  statusBar()->addWidget(statusLabel_);
+
+  statusLabelTris_ = new QLabel(tr("Triangles count"));
+  statusLabelTris_->setAlignment(Qt::AlignHCenter);
+  statusLabelTris_->setMinimumSize(statusLabelTris_->sizeHint());
+  trianglesLabel_ = new QLabel(tr("0"));
+  trianglesLabel_->setMinimumWidth(100);
+  trianglesLabel_->setIndent(5);
+
+  statusBar()->addWidget(statusLabelMouse_);
   statusBar()->addWidget(mousePosLabel_);
+  statusBar()->addWidget(statusLabelTris_);
+  statusBar()->addWidget(trianglesLabel_);
 
   if ( view_ )
-    connect(view_, SIGNAL(mouseMoved(const QPoint & )), this, SLOT(updateStatusBar(const QPoint & )));
+  {
+    bool ok = connect(view_, SIGNAL(trianglesChanged(size_t)), this, SLOT(updateTrianglesCount(size_t)));
+    connect(view_, SIGNAL(mouseMoved(const QPoint & )), this, SLOT(updateMousePt(const QPoint & )));
+  }
 }
 
-void IntrusionPointWindow::updateStatusBar(const QPoint & mousePt)
+void IntrusionPointWindow::updateMousePt(const QPoint & mousePt)
 {
   QString str;
   str.sprintf( "{%d, %d}", mousePt.x(), mousePt.y() );
   mousePosLabel_->setText( str );
+}
+
+void IntrusionPointWindow::updateTrianglesCount(size_t trisN)
+{
+  QString str;
+  str.sprintf( "%d", trisN );
+  trianglesLabel_->setText( str );
 }

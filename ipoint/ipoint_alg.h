@@ -2,12 +2,14 @@
 
 #include "rect.h"
 #include <vector>
+#include <QObject>
 
 class Triangulator;
 
 
-class IntrusionPointAlgorithm
+class IntrusionPointAlgorithm : public QObject
 {
+  Q_OBJECT
 
 public:
 
@@ -29,6 +31,10 @@ public:
 
   // triangulation
   bool triangulation(std::vector<Triangle> *& tris);
+
+signals:
+
+  void trianglesChanged(size_t);
 
 private:
 

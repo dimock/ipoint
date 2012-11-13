@@ -7,6 +7,7 @@
 #include <QLabel>
 #include "iview.h"
 
+
 class IntrusionPointWindow : public QMainWindow
 {
 
@@ -19,7 +20,8 @@ public:
 private slots:
 
   void onNew();
-  void updateStatusBar(const QPoint & );
+  void updateMousePt(const QPoint & );
+  void updateTrianglesCount(size_t);
 
 protected:
 
@@ -33,6 +35,7 @@ protected:
   QMenu * fileMenu_;
   QAction * onNewAction_;
   QToolBar * fileToolbar_;
-  QLabel * statusLabel_;
+  QLabel * statusLabelMouse_, * statusLabelTris_;
   QLabel * mousePosLabel_;
+  QLabel * trianglesLabel_;
 };

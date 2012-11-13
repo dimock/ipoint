@@ -21,6 +21,7 @@ public:
 signals:
 
   void mouseMoved(const QPoint & pos);
+  void trianglesChanged(size_t);
 
 protected:
 
@@ -33,6 +34,7 @@ protected:
 private slots:
 
   void onPosChanged(const QPoint &);
+  void onTrianglesChanged(size_t);
 
 private:
   void draw();

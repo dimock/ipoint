@@ -148,6 +148,7 @@ bool IntrusionPointAlgorithm::triangulate()
   {
     dtr.triangulate(tris_);
     recalc();
+    emit trianglesChanged(tris_.size());
     return true;
   }
   catch ( std::runtime_error & e )

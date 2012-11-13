@@ -13,6 +13,7 @@ ViewWindow::ViewWindow(QWidget * parent) :
   screen_.size.z = 1;
   setMouseTracking(true);
   connect(this, SIGNAL(mouseMoved(const QPoint & )), this, SLOT(onPosChanged(const QPoint & )));
+  bool ok = connect(&alg_, SIGNAL(trianglesChanged(size_t)), this, SLOT(onTrianglesChanged(size_t)));
   setAttribute(Qt::WA_DeleteOnClose, true);
 }
 
@@ -93,6 +94,11 @@ void ViewWindow::onPosChanged(const QPoint & pt)
   Vec3f ptw(screen_.toWorld(pts));
   alg_.setCursorPt(ptw);
   repaint();
+}
+
+void ViewWindow::onTrianglesChanged(size_t trisN)
+{
+  emit trianglesChanged(trisN);
 }
 
 void ViewWindow::draw()
