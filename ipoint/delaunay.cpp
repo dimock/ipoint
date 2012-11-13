@@ -8,8 +8,8 @@ using namespace iMath;
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   points_(points), container_(points_), edgeLength_(0), rotateThreshold_(0), splitThreshold_(0)
 {
-  points_.clear();
-  load("d:\\scenes\\3dpad\\points_long.txt");
+  //points_.clear();
+  //load("d:\\scenes\\3dpad\\points_long.txt");
 //  save("d:\\scenes\\3dpad\\points.txt");
 
   cw_ = iMath::cw_dir(points_);
