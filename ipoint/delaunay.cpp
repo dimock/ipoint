@@ -6,10 +6,11 @@
 using namespace iMath;
 
 DelanayTriangulator::DelanayTriangulator(Points3f & points) :
-  points_(points), container_(points_), edgeLength_(0), rotateThreshold_(0), splitThreshold_(0)
+  points_(points), container_(points_),
+  edgeLength_(0), rotateThreshold_(0), splitThreshold_(0), thinThreshold_(0)
 {
   //points_.clear();
-  //load("d:\\scenes\\3dpad\\points_long.txt");
+  //load("points4.txt");
 //  save("d:\\scenes\\3dpad\\points.txt");
 
   cw_ = iMath::cw_dir(points_);
@@ -72,21 +73,11 @@ DelanayTriangulator::~DelanayTriangulator()
 
 void DelanayTriangulator::triangulate(Triangles & tris)
 {
-  for ( ;; )
-  {
-    int n = makeDelaunay();
-    if ( !n )
-      break;
-  }
+  for ( ; makeDelaunay() > 0; );
 
   split();
 
-  for ( ;;)
-  {
-    int n = makeDelaunay();
-    if ( !n )
-      break;
-  }
+  for ( ; makeDelaunay() > 0; );
 
   postbuild(tris);
 }
@@ -119,8 +110,9 @@ int DelanayTriangulator::makeDelaunay()
   return num;
 }
 
-void DelanayTriangulator::makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdge*> & eg_list, double threshold)
+void DelanayTriangulator::makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdge*> & eg_list)
 {
+  std::list<OrEdge* > egs;
   for ( ; !edges.empty(); )
   {
     std::set<OrEdge*>::iterator i = edges.begin();
@@ -138,27 +130,65 @@ void DelanayTriangulator::makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdg
     OrEdge * lnext = e->get_adjacent()->next();
     OrEdge * lprev = e->get_adjacent()->prev();
 
-    edges.insert(rnext);
-    edges.insert(rprev);
-    edges.insert(lnext);
-    edges.insert(lprev);
+    egs.push_back(rnext);
+    egs.push_back(rprev);
+    egs.push_back(lnext);
+    egs.push_back(lprev);
 
-    if ( rnext->get_adjacent() && rnext->length() > threshold )
-      eg_list.insert(rnext);
-    if ( rprev->get_adjacent() && rprev->length() > threshold )
-      eg_list.insert(rprev);
-    if ( lprev->get_adjacent() && lprev->length() > threshold )
-      eg_list.insert(lprev);
-    if ( lnext->get_adjacent() && lnext->length() > threshold )
-      eg_list.insert(lnext);
+    for (std::list<OrEdge *>::iterator j = egs.begin(); j != egs.end(); ++j)
+    {
+      OrEdge * g = *j;
+      edges.insert(g);
+      if ( g->get_adjacent() && g->length() > splitThreshold_ )
+        eg_list.insert(g);
+    }
   }
+}
+
+bool DelanayTriangulator::getSplitPoint(OrEdge * e, Vec3f & p) const
+{
+  double l = e->length();
+  if ( l < splitThreshold_ )
+    return false;
+
+  const Vec3f & p0 = points_.at(e->org());
+  const Vec3f & p1 = points_.at(e->dst());
+  p = (p0 + p1) * 0.5;
+
+  // thin triangle?
+  const Vec3f & q0 = points_.at(e->next()->dst());
+  const Vec3f & q1 = points_.at(e->get_adjacent()->next()->dst());
+
+  double stopThreshold = splitThreshold_*0.1;
+
+  double dist0 = (q0 - p).length();
+  double dist1 = (q1 - p).length();
+  if ( dist0 < stopThreshold || dist1 < thinThreshold_ )
+    return false;
+
+  bool outside;
+  double h = iMath::dist_to_line(p0, q0, p, outside).length();
+  if ( h < thinThreshold_ )
+    return false;
+
+  h = iMath::dist_to_line(p1, q0, p, outside).length();
+  if ( h < thinThreshold_ )
+    return false;
+
+  h = iMath::dist_to_line(p0, q1, p, outside).length();
+  if ( h < thinThreshold_ )
+    return false;
+
+  h = iMath::dist_to_line(p1, q1, p, outside).length();
+  if ( h < thinThreshold_ )
+    return false;
+
+  return true;
 }
 
 void DelanayTriangulator::split()
 {
   std::set<OrEdge*> adj_used;
- // EdgesQueueSorted eg_queue;
-
   std::set<OrEdge *> eg_list;
 
   for (OrEdgesList::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
@@ -186,50 +216,9 @@ void DelanayTriangulator::split()
     if ( !adj )
       continue;
 
-    double l = e->length();
-    if ( l < splitThreshold_ )
+    Vec3f p;
+    if ( !getSplitPoint(e, p) )
       continue;
-
-    int o = e->org();
-    int d = e->dst();
-    if ( o == 101 && d == 995 )
-    {
-      int ttt = 0;
-    }
-
-    const Vec3f & p0 = points_.at(e->org());
-    const Vec3f & p1 = points_.at(e->dst());
-    Vec3f p = (p0 + p1) * 0.5;
-
-    // thin triangle?
-    const Vec3f & q0 = points_.at(e->next()->dst());
-    const Vec3f & q1 = points_.at(e->get_adjacent()->next()->dst());
-
-    double stopThreshold = splitThreshold_*0.1;
-
-    double dist0 = (q0 - p).length();
-    double dist1 = (q1 - p).length();
-    if ( dist0 < stopThreshold || dist1 < stopThreshold )
-      continue;
-
-    bool outside;
-    double h = iMath::dist_to_line(p0, q0, p, outside).length();
-    if ( h < stopThreshold )
-      continue;
-    
-    h = iMath::dist_to_line(p1, q0, p, outside).length();
-    if ( h < stopThreshold )
-      continue;
-
-    h = iMath::dist_to_line(p0, q1, p, outside).length();
-    if ( h < stopThreshold )
-      continue;
-
-    h = iMath::dist_to_line(p1, q1, p, outside).length();
-    if ( h < stopThreshold )
-      continue;
-
-
 
     int index = (int)points_.size();
     points_.push_back(p);
@@ -265,7 +254,8 @@ void DelanayTriangulator::split()
     edges.insert(rnext);
     edges.insert(lprev);
     edges.insert(c2next);
-    makeDelaunay(edges, eg_list, splitThreshold_);
+
+    makeDelaunay(edges, eg_list);
 
     for (std::list<OrEdge*>::iterator i = egs.begin(); i != egs.end(); ++i)
     {
@@ -319,9 +309,9 @@ void DelanayTriangulator::prebuild()
   if ( container_.edges().size() > 0 )
     edgeLength_ /= container_.edges().size();
 
-  //edgeLength_  = 0.047255099481883819;
   rotateThreshold_ = edgeLength_*0.0001;
   splitThreshold_ = edgeLength_*1.5;
+  thinThreshold_  = edgeLength_*0.1;
 
   intrusionPoint(curr);
 }
