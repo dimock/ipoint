@@ -25,14 +25,14 @@ void IntrusionPointAlgorithm::load(const QString & fname)
   for ( ; !qts.atEnd(); )
   {
     QString sline = qts.readLine();
-    if ( sline.isEmpty() )
+
+    if ( sline.isEmpty() || sline[0] == '{' )
       continue;
-    if ( sline[0] == '{' )
-      continue;
+
     if ( sline[0] == '}' )
       break;
 
-    QStringList slist = sline.split( QRegExp("[{},;\\s]+"), QString::SkipEmptyParts);
+    QStringList slist = sline.split( QRegExp("[{},;\\s]+"), QString::SkipEmptyParts );
     if ( slist.size() < 2 )
       break;
 
@@ -117,8 +117,8 @@ bool IntrusionPointAlgorithm::haveSelfIsect(const Vec3f & q1, Vec3f & r) const
   const Vec3f & q0 = points_.back();
   for (size_t i = 0; i < points_.size()-2; ++i)
   {
-    const Vec3f & p0 = points_[i];
-    const Vec3f & p1 = points_[i+1];
+    const Vec3f & p0 = points_.at(i);
+    const Vec3f & p1 = points_.at(i+1);
     double dist;
     if ( !edges_isect(p0, p1, q0, q1, r, dist) )
       continue;
@@ -126,8 +126,8 @@ bool IntrusionPointAlgorithm::haveSelfIsect(const Vec3f & q1, Vec3f & r) const
       continue;
     return true;
   }
-  const Vec3f & p0 = points_[points_.size()-2];
-  const Vec3f & p1 = points_[points_.size()-1];
+  const Vec3f & p0 = points_.at(points_.size()-2);
+  const Vec3f & p1 = points_.at(points_.size()-1);
   Vec3f rp = p1-p0; rp.norm();
   Vec3f rq = q1-q0; rq.norm();
   double v = rp*rq;
@@ -192,7 +192,7 @@ void IntrusionPointAlgorithm::recalc()
 {
   rect_.makeInvalid();
   for (size_t i = 0; i < points_.size(); ++i)
-    rect_.add(points_[i]);
+    rect_.add(points_.at(i));
   if ( !closed_ || points_.size() == 0 )
     return;
 }

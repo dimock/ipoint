@@ -378,9 +378,9 @@ OrEdge * DelanayTriangulator::findConvexEdge(OrEdge * from)
     int j = curr->org();
     int k = curr->dst();
 
-    const Vec3f & p0 = container_.points()[i];
-    const Vec3f & p1 = container_.points()[j];
-    const Vec3f & p2 = container_.points()[k];
+    const Vec3f & p0 = container_.points().at(i);
+    const Vec3f & p1 = container_.points().at(j);
+    const Vec3f & p2 = container_.points().at(k);
 
     Vec3f v = (p1 - p0) ^ (p2 - p0);
     if ( cw_ * v > 0 ) // CW
@@ -399,9 +399,9 @@ OrEdge * DelanayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   int j = cv_edge->org();
   int k = cv_edge->dst();
 
-  const Vec3f & p0 = container_.points()[i];
-  const Vec3f & p1 = container_.points()[j];
-  const Vec3f & p2 = container_.points()[k];
+  const Vec3f & p0 = container_.points().at(i);
+  const Vec3f & p1 = container_.points().at(j);
+  const Vec3f & p2 = container_.points().at(k);
 
 
   bool outside = false;
@@ -414,7 +414,7 @@ OrEdge * DelanayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   for (OrEdge * curr = cv_edge->next(); curr != last; curr = curr->next())
   {
     int n = curr->dst();
-    const Vec3f & q = container_.points()[n];
+    const Vec3f & q = container_.points().at(n);
     Vec3f vd = dist_to_line(p0, p2, q, outside);
     bool inside = inside_tri(p0, p1, p2, q);
     if ( inside && vd*vdist_p1 > 0 )
