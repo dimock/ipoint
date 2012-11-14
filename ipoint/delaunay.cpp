@@ -259,11 +259,6 @@ void DelanayTriangulator::split()
     {
       OrEdge * e1 = *i;
       double l1 = e1->length();
-      if ( l1 == 0 )
-      {
-        int rrr = 0;
-        //return;
-      }
       if ( !e1->get_adjacent() || l1 < splitThreshold_ )
         continue;
 
@@ -294,7 +289,7 @@ void DelanayTriangulator::prebuild()
   OrEdge * curr = 0, * first = 0;
   for (size_t i = 0; i < container_.points().size(); ++i)
   {
-    OrEdge * e = container_.new_edge(i, (i+1) % container_.points().size());
+    OrEdge * e = container_.new_edge((int)i, (int)((i+1) % container_.points().size()));
     edgeLength_ += e->length();
     if ( !first )
       first = e;

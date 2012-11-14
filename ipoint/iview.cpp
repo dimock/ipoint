@@ -13,7 +13,7 @@ ViewWindow::ViewWindow(QWidget * parent) :
   screen_.size.z = 1;
   setMouseTracking(true);
   connect(this, SIGNAL(mouseMoved(const QPoint & )), this, SLOT(onPosChanged(const QPoint & )));
-  bool ok = connect(&alg_, SIGNAL(trianglesChanged(size_t)), this, SLOT(onTrianglesChanged(size_t)));
+  connect(&alg_, SIGNAL(trianglesChanged(size_t)), this, SLOT(onTrianglesChanged(size_t)));
   setAttribute(Qt::WA_DeleteOnClose, true);
 }
 
@@ -93,7 +93,7 @@ bool ViewWindow::isOverFirstPt(const Vec3f & p)
   return false;
 }
 
-void ViewWindow::paintEvent(QPaintEvent * event)
+void ViewWindow::paintEvent(QPaintEvent * )
 {
   draw();
 }
@@ -137,7 +137,7 @@ void ViewWindow::draw()
   if ( alg_.isClosed() )
     qpoints.push_back(qpoints[0]);
 
-  painter.drawPolyline(&qpoints[0], qpoints.size());
+  painter.drawPolyline(&qpoints[0], (int)qpoints.size());
 
   // remove duplicated point if added
   if ( alg_.isClosed() )
@@ -169,7 +169,7 @@ void ViewWindow::draw()
         qpts.push_back( QPoint(p.x, p.y) );
       }
       qpts.push_back(qpts[0]);
-      painter.drawPolygon(&qpts[0], qpts.size());
+      painter.drawPolygon(&qpts[0], (int)qpts.size());
     }
   }
 

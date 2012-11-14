@@ -13,7 +13,7 @@ IntrusionPointWindow::IntrusionPointWindow(QWidget * parent) :
   if ( view_ )
     setCentralWidget(view_);
   setWindowIcon(QIcon(":/images/main_icon.png"));
-  setWindowTitle(tr("polygons triangulation algorithm *intrusion point's method*"));
+  setWindowTitle(tr("Delaunay polygons triangulation algorithm"));
   createMenu();
   createToolBar();
   createStatusBar();
@@ -108,7 +108,7 @@ void IntrusionPointWindow::createStatusBar()
 
   if ( view_ )
   {
-    bool ok = connect(view_, SIGNAL(trianglesChanged(size_t)), this, SLOT(updateTrianglesCount(size_t)));
+    connect(view_, SIGNAL(trianglesChanged(size_t)), this, SLOT(updateTrianglesCount(size_t)));
     connect(view_, SIGNAL(mouseMoved(const QPoint & )), this, SLOT(updateMousePt(const QPoint & )));
   }
 }
