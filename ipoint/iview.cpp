@@ -21,6 +21,18 @@ ViewWindow::~ViewWindow()
 {
 }
 
+void ViewWindow::load(const QString & fname)
+{
+  alg_.load(fname);
+  repaint();
+}
+
+void ViewWindow::save(const QString & fname) const
+{
+  alg_.save(fname);
+}
+
+
 void ViewWindow::reset()
 {
   alg_.reset();

@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QFileDialog>
 
 
 IntrusionPointWindow::IntrusionPointWindow(QWidget * parent) :
@@ -36,6 +37,20 @@ void IntrusionPointWindow::onNew()
     view_->reset();
 }
 
+void IntrusionPointWindow::onLoad()
+{
+  QString fname = QFileDialog::getOpenFileName(0, QObject::tr("Load polyline"), QObject::tr(""), QObject::tr("Text files (*.txt)"));
+  if ( view_ )
+    view_->load(fname);
+}
+
+void IntrusionPointWindow::onSave()
+{
+  QString fname = QFileDialog::getSaveFileName(0, QObject::tr("Load polyline"), QObject::tr("polyline.txt"), QObject::tr("Text files (*.txt)"));
+  if ( view_ )
+    view_->save(fname);
+}
+
 void IntrusionPointWindow::createMenu()
 {
   onNewAction_ = new QAction(tr("&New"), this);
@@ -44,14 +59,30 @@ void IntrusionPointWindow::createMenu()
   onNewAction_->setStatusTip(tr("Create a new document"));
   connect(onNewAction_, SIGNAL(triggered()), this, SLOT(onNew()));
 
+  onLoadAction_ = new QAction(tr("&Open"), this);
+  onLoadAction_->setIcon(QIcon(":/images/file_open.png"));
+  onLoadAction_->setShortcut(tr("Ctrl+O"));
+  onLoadAction_->setStatusTip(tr("Load polyline"));
+  connect(onLoadAction_, SIGNAL(triggered()), this, SLOT(onLoad()));
+
+  onSaveAction_ = new QAction(tr("&Save"), this);
+  onSaveAction_->setIcon(QIcon(":/images/file_save.png"));
+  onSaveAction_->setShortcut(tr("Ctrl+S"));
+  onSaveAction_->setStatusTip(tr("Save polyline"));
+  connect(onSaveAction_, SIGNAL(triggered()), this, SLOT(onSave()));
+
   fileMenu_ = menuBar()->addMenu(tr("&File"));
   fileMenu_->addAction(onNewAction_);
+  fileMenu_->addAction(onLoadAction_);
+  fileMenu_->addAction(onSaveAction_);
 }
 
 void IntrusionPointWindow::createToolBar()
 {
   fileToolbar_ = addToolBar(tr("&File"));
   fileToolbar_->addAction(onNewAction_);
+  fileToolbar_->addAction(onLoadAction_);
+  fileToolbar_->addAction(onSaveAction_);
 }
 
 void IntrusionPointWindow::createStatusBar()

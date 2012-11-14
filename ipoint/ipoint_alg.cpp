@@ -1,6 +1,9 @@
 #include "ipoint_alg.h"
 #include "imath.h"
 #include "delaunay.h"
+#include <QTextStream>
+#include <QFile>
+#include <QStringList>
 
 using namespace std;
 using namespace iMath;
@@ -8,6 +11,63 @@ using namespace iMath;
 IntrusionPointAlgorithm::IntrusionPointAlgorithm() :
   closed_(false), pointCount_(0)
 {
+}
+
+void IntrusionPointAlgorithm::load(const QString & fname)
+{
+  QFile qf(fname);
+  if ( !qf.open(QIODevice::ReadOnly) )
+    return;
+
+  reset();
+
+  QTextStream qts(&qf);
+  for ( ; !qts.atEnd(); )
+  {
+    QString sline = qts.readLine();
+    if ( sline.isEmpty() )
+      continue;
+    if ( sline[0] == '{' )
+      continue;
+    if ( sline[0] == '}' )
+      break;
+
+    QStringList slist = sline.split( QRegExp("[{},;\\s]+"), QString::SkipEmptyParts);
+    if ( slist.size() < 2 )
+      break;
+
+    Vec3f p;
+    p.x = slist[0].toDouble();
+    p.y = slist[1].toDouble();
+
+    points_.push_back(p);
+  }
+
+  pointCount_ = points_.size();
+  closed_ = true;
+
+  triangulate();
+}
+
+void IntrusionPointAlgorithm::save(const QString & fname) const
+{
+  QFile qf(fname);
+  if ( !qf.open(QIODevice::WriteOnly) )
+    return;
+
+  QTextStream qts(&qf);
+
+  size_t n = std::min(pointCount_, points_.size());
+
+  qts << tr("{\n");
+  for (size_t i = 0; i < n; ++i)
+  {
+    const Vec3f & p = points_.at(i);
+    QString str;
+    str.sprintf("  {%g, %g}\n", p.x, p.y);
+    qts << str;
+  }
+  qts << tr("}\n");
 }
 
 void IntrusionPointAlgorithm::reset()
@@ -151,7 +211,7 @@ bool IntrusionPointAlgorithm::triangulate()
     emit trianglesChanged(tris_.size());
     return true;
   }
-  catch ( std::runtime_error & e )
+  catch ( std::runtime_error &  )
   {
     return false;
   }

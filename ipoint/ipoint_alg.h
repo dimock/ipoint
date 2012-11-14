@@ -16,6 +16,10 @@ public:
   IntrusionPointAlgorithm();
 
   // polyline management
+
+  void load(const QString & fname);
+  void save(const QString & fname) const;
+
   void reset();
   void addPoint(const Vec3f & pt, bool close);
   void insertPoint(size_t idx, const Vec3f & pt);

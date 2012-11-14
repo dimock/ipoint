@@ -20,6 +20,8 @@ public:
 private slots:
 
   void onNew();
+  void onLoad();
+  void onSave();
   void updateMousePt(const QPoint & );
   void updateTrianglesCount(size_t);
 
@@ -34,6 +36,8 @@ protected:
   ViewWindow * view_;
   QMenu * fileMenu_;
   QAction * onNewAction_;
+  QAction * onLoadAction_;
+  QAction * onSaveAction_;
   QToolBar * fileToolbar_;
   QLabel * statusLabelMouse_, * statusLabelTris_;
   QLabel * mousePosLabel_;

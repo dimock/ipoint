@@ -25,15 +25,13 @@ public:
 
   void triangulate(Triangles & tris);
 
-  void save(const char * fname);
-  void load(const char * fname);
-
 private:
 
   void prebuild();
+  bool needRotate(const OrEdge * e, const Vec3f & cw, double threshold) const;
   int  makeDelaunay();
   void makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdge*> & eg_list);
-  bool getSplitPoint(OrEdge *, Vec3f & ) const;
+  bool getSplitPoint(const OrEdge * , Vec3f & ) const;
   void split();
   void postbuild(Triangles &);
   void intrusionPoint(OrEdge * from);
@@ -44,7 +42,6 @@ private:
   // edge->dst() is intrude point
   OrEdge * findIntrudeEdge(OrEdge * cv_edge);
 
-  Points3f & points_;
   double edgeLength_;
   double rotateThreshold_;
   double splitThreshold_;

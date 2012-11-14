@@ -17,6 +17,8 @@ public:
   ~ViewWindow();
 
   void reset();
+  void load(const QString &);
+  void save(const QString &) const;
 
 signals:
 

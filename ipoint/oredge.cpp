@@ -111,14 +111,6 @@ bool OrEdge::splitTri(int i)
   if ( !rnext || !rprev || rnext->next() != rprev )
     return false;
 
-  const Vec3f & p0 = container_->points().at(org());
-  const Vec3f & p1 = container_->points().at(dst());
-  const Vec3f & p2 = container_->points().at(rnext->dst());
-
-  const Vec3f & p = container_->points().at(i);
-  if ( !iMath::inside_tri(p0, p1, p2, p) )
-    return false;
-
   OrEdge * a1 = container_->new_edge(dst(), i);
   OrEdge * b1 = container_->new_edge(i, org());
   
@@ -250,49 +242,6 @@ bool OrEdge::isectEdge(const OrEdge & other, Vec3f & r, double & dist) const
 {
   return isectEdge( other.container_->points().at(other.org()), other.container_->points().at(other.dst()), r, dist);
 }
-
-bool OrEdge::needRotate(const Vec3f & cw, double threshold) const
-{
-  if ( !get_adjacent() )
-    return false;
-
-  const Vec3f & po = container_->points().at(org());
-  const Vec3f & pd = container_->points().at(dst());
-
-  const Vec3f & pr = container_->points().at(next()->dst());
-  const Vec3f & pl = container_->points().at(get_adjacent()->next()->dst());
-
-  bool outside;
-  Vec3f dist_r = iMath::dist_to_line(po, pd, pr, outside);
-  if ( dist_r.length() < threshold )
-    return false;
-
-  Vec3f dist_l = iMath::dist_to_line(po, pd, pl, outside);
-  if ( dist_l.length() < threshold )
-    return false;
-
-  Vec3f r1 = -next()->dir();
-  Vec3f r2 = prev()->dir();
-
-  Vec3f r3 = -get_adjacent()->next()->dir();
-  Vec3f r4 = get_adjacent()->prev()->dir();
-
-  Vec3f x1 = r1^r4;
-  Vec3f x2 = r3^r2;
-
-  if ( x1*cw <= 0 || x2*cw <= 0 )
-    return false;
-
-  double sa, ca;
-  iMath::sincos(r1, r2, sa, ca);
-
-  double sb, cb;
-  iMath::sincos(r3, r4, sb, cb);
-
-  double dln = sa*cb + sb*ca;
-  return dln < 0;
-}
-
 //////////////////////////////////////////////////////////////////////////
 OrEdge * EdgesContainer::new_edge(int o, int d)
 {

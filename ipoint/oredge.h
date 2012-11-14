@@ -72,10 +72,6 @@ public:
   bool isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const;
   bool isectEdge(const OrEdge & other, Vec3f & r, double & dist) const;
 
-  // delaunay critera
-  bool needRotate(const Vec3f & cw, double threshold) const;
-
-
   // data
 private:
   
