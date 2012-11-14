@@ -57,7 +57,7 @@ public:
   // get triangle representation
   Triangle tri() const;
   
-  // comparision
+  // comparison
   bool operator < (const OrEdge & other) const;
   bool operator == (const OrEdge & other) const;
   bool touches(const OrEdge & other) const;
