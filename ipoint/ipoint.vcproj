@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="ipoint"
 	ProjectGUID="{453582A5-9E00-378D-AEA7-C835D9181E74}"
+	RootNamespace="ipoint"
 	Keyword="Qt4VSv1.0"
 	>
 	<Platforms>
@@ -141,7 +142,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm200 -w34100 -w34189"
 				Optimization="4"
-				AdditionalIncludeDirectories="$(SANDBOX)\boost_1.39.0;&quot;$(QTDIR)\include\QtCore&quot;,&quot;$(QTDIR)\include\QtGui&quot;,&quot;$(QTDIR)\include&quot;,&quot;.&quot;,&quot;$(QTDIR)\include\ActiveQt&quot;,&quot;debug&quot;,$(QTDIR)\mkspecs\default"
+				AdditionalIncludeDirectories="$(SANDBOX)\boost_1.39.0;$(SANDBOX)\boost_1.51.0;&quot;$(QTDIR)\include\QtCore&quot;,&quot;$(QTDIR)\include\QtGui&quot;,&quot;$(QTDIR)\include&quot;,&quot;.&quot;,&quot;$(QTDIR)\include\ActiveQt&quot;,&quot;debug&quot;,$(QTDIR)\mkspecs\default"
 				PreprocessorDefinitions="_WINDOWS,UNICODE,WIN32,QT_LARGEFILE_SUPPORT,QT_DLL,QT_GUI_LIB,QT_CORE_LIB,QT_HAVE_MMX,QT_HAVE_3DNOW,QT_HAVE_SSE,QT_HAVE_MMXEXT,QT_HAVE_SSE2,QT_THREAD_SUPPORT"
 				GeneratePreprocessedFile="0"
 				ExceptionHandling="1"
@@ -171,7 +172,7 @@
 				IgnoreImportLibrary="true"
 				AdditionalOptions="&quot;/MANIFESTDEPENDENCY:type=&apos;win32&apos; name=&apos;Microsoft.Windows.Common-Controls&apos; version=&apos;6.0.0.0&apos; publicKeyToken=&apos;6595b64144ccf1df&apos; language=&apos;*&apos; processorArchitecture=&apos;*&apos;&quot;"
 				AdditionalDependencies="$(QTDIR)\lib\qtmaind.lib $(QTDIR)\lib\QtGuid4.lib $(QTDIR)\lib\QtCored4.lib"
-				OutputFile="debug\ipoint.exe"
+				OutputFile="$(OutDir)\ipoint.exe"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(QTDIR)\lib"
 				GenerateDebugInformation="true"
@@ -330,7 +331,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm200 -w34100 -w34189"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(SANDBOX)\boost_1.39.0;&quot;$(QTDIR)\include\QtCore&quot;,&quot;$(QTDIR)\include\QtGui&quot;,&quot;$(QTDIR)\include&quot;,&quot;.&quot;,&quot;$(QTDIR)\include\ActiveQt&quot;,&quot;release&quot;,$(QTDIR)\mkspecs\default"
+				AdditionalIncludeDirectories="$(SANDBOX)\boost_1.39.0;$(SANDBOX)\boost_1.51.0;&quot;$(QTDIR)\include\QtCore&quot;,&quot;$(QTDIR)\include\QtGui&quot;,&quot;$(QTDIR)\include&quot;,&quot;.&quot;,&quot;$(QTDIR)\include\ActiveQt&quot;,&quot;release&quot;,$(QTDIR)\mkspecs\default"
 				PreprocessorDefinitions="QT_NO_DEBUG,NDEBUG,_WINDOWS,UNICODE,WIN32,QT_LARGEFILE_SUPPORT,QT_DLL,QT_NO_DEBUG,QT_GUI_LIB,QT_CORE_LIB,QT_HAVE_MMX,QT_HAVE_3DNOW,QT_HAVE_SSE,QT_HAVE_MMXEXT,QT_HAVE_SSE2,QT_THREAD_SUPPORT,NDEBUG"
 				GeneratePreprocessedFile="0"
 				ExceptionHandling="1"
@@ -360,7 +361,7 @@
 				IgnoreImportLibrary="true"
 				AdditionalOptions="&quot;/MANIFESTDEPENDENCY:type=&apos;win32&apos; name=&apos;Microsoft.Windows.Common-Controls&apos; version=&apos;6.0.0.0&apos; publicKeyToken=&apos;6595b64144ccf1df&apos; language=&apos;*&apos; processorArchitecture=&apos;*&apos;&quot;"
 				AdditionalDependencies="$(QTDIR)\lib\qtmain.lib $(QTDIR)\lib\QtGui4.lib $(QTDIR)\lib\QtCore4.lib"
-				OutputFile="release\ipoint.exe"
+				OutputFile="$(OutDir)\ipoint.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(QTDIR)\lib"
@@ -455,8 +456,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o debug\moc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o debug\moc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint.h"
 						Outputs="debug\moc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -466,8 +467,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o debug\moc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o debug\moc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint.h"
 						Outputs="debug\moc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -477,8 +478,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o release\moc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o release\moc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint.h"
 						Outputs="release\moc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -488,8 +489,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o release\moc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint.h -o release\moc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint.h"
 						Outputs="release\moc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -503,8 +504,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint_alg.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o debug\moc_ipoint_alg.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint_alg.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o debug\moc_ipoint_alg.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint_alg.h"
 						Outputs="debug\moc_ipoint_alg.cpp"
 					/>
 				</FileConfiguration>
@@ -514,8 +515,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint_alg.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o debug\moc_ipoint_alg.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint_alg.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o debug\moc_ipoint_alg.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint_alg.h"
 						Outputs="debug\moc_ipoint_alg.cpp"
 					/>
 				</FileConfiguration>
@@ -525,8 +526,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint_alg.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o release\moc_ipoint_alg.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint_alg.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o release\moc_ipoint_alg.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint_alg.h"
 						Outputs="release\moc_ipoint_alg.cpp"
 					/>
 				</FileConfiguration>
@@ -536,8 +537,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC ipoint_alg.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o release\moc_ipoint_alg.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;ipoint_alg.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 ipoint_alg.h -o release\moc_ipoint_alg.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;ipoint_alg.h"
 						Outputs="release\moc_ipoint_alg.cpp"
 					/>
 				</FileConfiguration>
@@ -551,8 +552,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC iview.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o debug\moc_iview.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;iview.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o debug\moc_iview.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;iview.h"
 						Outputs="debug\moc_iview.cpp"
 					/>
 				</FileConfiguration>
@@ -562,8 +563,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC iview.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o debug\moc_iview.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;iview.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;debug&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o debug\moc_iview.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;iview.h"
 						Outputs="debug\moc_iview.cpp"
 					/>
 				</FileConfiguration>
@@ -573,8 +574,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC iview.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o release\moc_iview.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;iview.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o release\moc_iview.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;iview.h"
 						Outputs="release\moc_iview.cpp"
 					/>
 				</FileConfiguration>
@@ -584,8 +585,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="MOC iview.h"
-						CommandLine="D:\Sandbox64\qt\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o release\moc_iview.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\moc.exe;iview.h"
+						CommandLine="$(QTDIR)\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;$(QTDIR)\include\QtCore&quot; -I&quot;$(QTDIR)\include\QtGui&quot; -I&quot;$(QTDIR)\include&quot; -I&quot;.&quot; -I&quot;$(QTDIR)\include\ActiveQt&quot; -I&quot;release&quot; -I$(QTDIR)\mkspecs\default -D_MSC_VER=1400 -DWIN32 iview.h -o release\moc_iview.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\moc.exe;iview.h"
 						Outputs="release\moc_iview.cpp"
 					/>
 				</FileConfiguration>
@@ -788,8 +789,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="RCC ipoint.qrc"
-						CommandLine="D:\Sandbox64\qt\bin\rcc.exe -name ipoint ipoint.qrc -o debug\qrc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
+						CommandLine="$(QTDIR)\bin\rcc.exe -name ipoint ipoint.qrc -o debug\qrc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
 						Outputs="debug\qrc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -799,8 +800,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="RCC ipoint.qrc"
-						CommandLine="D:\Sandbox64\qt\bin\rcc.exe -name ipoint ipoint.qrc -o debug\qrc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
+						CommandLine="$(QTDIR)\bin\rcc.exe -name ipoint ipoint.qrc -o debug\qrc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
 						Outputs="debug\qrc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -810,8 +811,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="RCC ipoint.qrc"
-						CommandLine="D:\Sandbox64\qt\bin\rcc.exe -name ipoint ipoint.qrc -o release\qrc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
+						CommandLine="$(QTDIR)\bin\rcc.exe -name ipoint ipoint.qrc -o release\qrc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
 						Outputs="release\qrc_ipoint.cpp"
 					/>
 				</FileConfiguration>
@@ -821,8 +822,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="RCC ipoint.qrc"
-						CommandLine="D:\Sandbox64\qt\bin\rcc.exe -name ipoint ipoint.qrc -o release\qrc_ipoint.cpp&#x0D;&#x0A;"
-						AdditionalDependencies="D:\Sandbox64\qt\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
+						CommandLine="$(QTDIR)\bin\rcc.exe -name ipoint ipoint.qrc -o release\qrc_ipoint.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="$(QTDIR)\bin\rcc.exe;images\main_icon.png;images\new_icon.png;ipoint.qrc"
 						Outputs="release\qrc_ipoint.cpp"
 					/>
 				</FileConfiguration>
