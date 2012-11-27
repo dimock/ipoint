@@ -21,13 +21,10 @@ IntrusionPointWindow::IntrusionPointWindow(QWidget * parent) :
 
 IntrusionPointWindow::~IntrusionPointWindow()
 {
-  //QMessageBox::information(0, tr("FYI"), tr("IntrusionPointWindow deleted"));
 }
 
 void IntrusionPointWindow::closeEvent(QCloseEvent * event)
 {
-//  QMainWindow::closeEvent(event);
-//  QMessageBox::information(0, tr("FYI"), tr("IntrusionPointWindow is going to be closed"));
   event->accept();
 }
 
@@ -46,7 +43,7 @@ void IntrusionPointWindow::onLoad()
 
 void IntrusionPointWindow::onSave()
 {
-  QString fname = QFileDialog::getSaveFileName(0, QObject::tr("Load polyline"), QObject::tr("polyline.txt"), QObject::tr("Text files (*.txt)"));
+  QString fname = QFileDialog::getSaveFileName(0, QObject::tr("Save polyline"), QObject::tr("polyline.txt"), QObject::tr("Text files (*.txt)"));
   if ( view_ )
     view_->save(fname);
 }

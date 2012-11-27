@@ -5,7 +5,7 @@
 
 using namespace iMath;
 
-DelanayTriangulator::DelanayTriangulator(Points3f & points) :
+DelaunayTriangulator::DelaunayTriangulator(Points3f & points) :
   container_(points),
   edgeLength_(0), rotateThreshold_(0), splitThreshold_(0), thinThreshold_(0)
 {
@@ -17,11 +17,11 @@ DelanayTriangulator::DelanayTriangulator(Points3f & points) :
   prebuild();
 }
 
-DelanayTriangulator::~DelanayTriangulator()
+DelaunayTriangulator::~DelaunayTriangulator()
 {
 }
 
-void DelanayTriangulator::triangulate(Triangles & tris)
+void DelaunayTriangulator::triangulate(Triangles & tris)
 {
   for ( ; makeDelaunay() > 0; );
 
@@ -32,22 +32,114 @@ void DelanayTriangulator::triangulate(Triangles & tris)
   postbuild(tris);
 }
 
-int DelanayTriangulator::makeDelaunay()
+void DelaunayTriangulator::split()
 {
-  std::set<OrEdge*> used;
-  std::set<OrEdge*> adj_used;
-  for (OrEdgesList::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
+  EdgesSet to_split, to_exclude;
+
+  for (OrEdgesList_shared::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
   {
     OrEdge * e = i->get();
-    if ( adj_used.find(e) != adj_used.end() || !e->get_adjacent() )
+    OrEdge * a = e->get_adjacent();
+    if ( !a || e->length() < splitThreshold_ )
       continue;
 
-    used.insert(e);
-    adj_used.insert(e->get_adjacent());
+    if ( to_exclude.find(e) != to_exclude.end() )
+      continue;
+
+    to_split.insert(e);
+    to_exclude.insert(a);
+  }
+
+  for ( ; !to_split.empty(); )
+  {
+    EdgesSet::iterator iter = to_split.begin();
+    OrEdge * e = *iter;
+    to_split.erase(iter);
+
+    if ( e->org() == 11 && e->dst() == 25 || e->org() == 25 && e->dst() == 11 )
+    {
+      int ttt = 0;
+    }
+
+    OrEdge * adj = e->get_adjacent();
+    if ( !adj )
+      continue;
+
+    Vec3f p;
+    if ( !getSplitPoint(e, p) )
+      continue;
+
+    int index = (int)container_.points().size();
+    container_.points().push_back(p);
+
+    if ( !e->splitEdge(index) )
+      throw std::runtime_error("couldn't split edge");
+
+    OrEdge * a1 = e->prev();
+    OrEdge * b1 = a1->get_adjacent();
+    OrEdge * c1 = b1->prev();
+
+    OrEdge * a2 = adj->next();
+    OrEdge * b2 = a2->get_adjacent();
+    OrEdge * c2 = b2->next();
+
+    if ( c2 != c1->get_adjacent() )
+      throw std::runtime_error("wrong topology");
+
+    EdgesList egs;
+    egs.push_back(a1);
+    egs.push_back(c1);
+    egs.push_back(a2);
+    egs.push_back(e);
+
+    OrEdge * rnext = e->next();
+    OrEdge * lprev = adj->prev();
+    OrEdge * c2next = c2->next();
+
+    EdgesSet to_delanay;
+    to_delanay.insert(e);
+    to_delanay.insert(c1);
+    to_delanay.insert(b1);
+    to_delanay.insert(rnext);
+    to_delanay.insert(lprev);
+    to_delanay.insert(c2next);
+
+    makeDelaunay(to_delanay, to_split, to_exclude);
+
+    // added edges could be changed while makeDelaunay, so we add them after
+    for (EdgesList::iterator i = egs.begin(); i != egs.end(); ++i)
+    {
+      OrEdge * g = *i;
+      OrEdge * a = g->get_adjacent();
+      double L = g->length();
+      if ( !a || L < splitThreshold_ )
+        continue;
+
+      if ( to_exclude.find(g) != to_exclude.end() )
+        continue;
+
+      to_split.insert(g);
+      to_exclude.insert(a);
+    }
+  }
+}
+
+int DelaunayTriangulator::makeDelaunay()
+{
+  EdgesSet to_delanay, to_exclude;
+  for (OrEdgesList_shared::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
+  {
+    OrEdge * e = i->get();
+    OrEdge * a = e->get_adjacent();
+    if ( !a || to_exclude.find(e) != to_exclude.end() )
+      continue;
+
+    to_delanay.insert(e);
+    to_exclude.insert(a);
   }
 
   int num = 0;
-  for (std::set<OrEdge*>::iterator i = used.begin(); i != used.end(); ++i)
+  for (EdgesSet::iterator i = to_delanay.begin(); i != to_delanay.end(); ++i)
   {
     OrEdge * e = *i;
     if ( !needRotate(e, cw_, rotateThreshold_) )
@@ -60,14 +152,14 @@ int DelanayTriangulator::makeDelaunay()
   return num;
 }
 
-void DelanayTriangulator::makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdge*> & eg_list)
+void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_split, EdgesSet & to_exclude)
 {
-  std::list<OrEdge* > egs;
-  for ( ; !edges.empty(); )
+  EdgesList egs;
+  for ( ; !to_delanay.empty(); )
   {
-    std::set<OrEdge*>::iterator i = edges.begin();
+    EdgesSet::iterator i = to_delanay.begin();
     OrEdge * e = *i;
-    edges.erase(i);
+    to_delanay.erase(i);
 
     if ( !needRotate(e, cw_, rotateThreshold_) )
       continue;
@@ -85,32 +177,44 @@ void DelanayTriangulator::makeDelaunay(std::set<OrEdge*> & edges, std::set<OrEdg
     egs.push_back(lnext);
     egs.push_back(lprev);
 
-    for (std::list<OrEdge *>::iterator j = egs.begin(); j != egs.end(); ++j)
+    for (EdgesList::iterator j = egs.begin(); j != egs.end(); ++j)
     {
       OrEdge * g = *j;
-      edges.insert(g);
-      if ( g->get_adjacent() && g->length() > splitThreshold_ )
-        eg_list.insert(g);
+      to_delanay.insert(g);
+
+      OrEdge * a = g->get_adjacent();
+      if ( !a || g->length() < splitThreshold_ )
+        continue;
+
+      if ( to_exclude.find(g) != to_exclude.end() )
+        continue;
+
+      to_split.insert(g);
+      to_exclude.insert(a);
     }
   }
 }
 
-bool DelanayTriangulator::getSplitPoint(const OrEdge * e, Vec3f & p) const
+bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vec3f & p) const
 {
-  if ( !e || !e->get_adjacent() )
+  if ( !edge )
     return false;
 
-  double l = e->length();
+  const OrEdge * adj = edge->get_adjacent();
+  if ( !adj )
+    return false;
+
+  double l = edge->length();
   if ( l < splitThreshold_ )
     return false;
 
-  const Vec3f & p0 = container_.points().at(e->org());
-  const Vec3f & p1 = container_.points().at(e->dst());
+  const Vec3f & p0 = container_.points().at(edge->org());
+  const Vec3f & p1 = container_.points().at(edge->dst());
   p = (p0 + p1) * 0.5;
 
   // thin triangle?
-  const Vec3f & q0 = container_.points().at(e->next()->dst());
-  const Vec3f & q1 = container_.points().at(e->get_adjacent()->next()->dst());
+  const Vec3f & q0 = container_.points().at(edge->next()->dst());
+  const Vec3f & q1 = container_.points().at(adj->next()->dst());
 
   double stopThreshold = splitThreshold_*0.1;
 
@@ -140,16 +244,20 @@ bool DelanayTriangulator::getSplitPoint(const OrEdge * e, Vec3f & p) const
 }
 
 
-bool DelanayTriangulator::needRotate(const OrEdge * e, const Vec3f & cw, double threshold) const
+bool DelaunayTriangulator::needRotate(const OrEdge * edge, const Vec3f & cw, double threshold) const
 {
-  if ( !e || !e->get_adjacent() )
+  if ( !edge )
+    return false;
+  
+  const OrEdge * adj = edge->get_adjacent();
+  if ( !adj )
     return false;
 
-  const Vec3f & po = container_.points().at(e->org());
-  const Vec3f & pd = container_.points().at(e->dst());
+  const Vec3f & po = container_.points().at(edge->org());
+  const Vec3f & pd = container_.points().at(edge->dst());
 
-  const Vec3f & pr = container_.points().at(e->next()->dst());
-  const Vec3f & pl = container_.points().at(e->get_adjacent()->next()->dst());
+  const Vec3f & pr = container_.points().at(edge->next()->dst());
+  const Vec3f & pl = container_.points().at(adj->next()->dst());
 
   bool outside;
   Vec3f dist_r = iMath::dist_to_line(po, pd, pr, outside);
@@ -160,18 +268,20 @@ bool DelanayTriangulator::needRotate(const OrEdge * e, const Vec3f & cw, double 
   if ( dist_l.length() < threshold )
     return false;
 
-  Vec3f r1 = -e->next()->dir();
-  Vec3f r2 = e->prev()->dir();
+  Vec3f r1 = -edge->next()->dir();
+  Vec3f r2 =  edge->prev()->dir();
 
-  Vec3f r3 = -e->get_adjacent()->next()->dir();
-  Vec3f r4 = e->get_adjacent()->prev()->dir();
+  Vec3f r3 = -adj->next()->dir();
+  Vec3f r4 =  adj->prev()->dir();
 
-  Vec3f x1 = r1^r4;
-  Vec3f x2 = r3^r2;
+  Vec3f n1 = r1^r4;
+  Vec3f n2 = r3^r2;
 
-  if ( x1*cw <= 0 || x2*cw <= 0 )
+  // V-pair of triangles - don't rotate!
+  if ( n1*cw <= 0 || n2*cw <= 0 )
     return false;
 
+  // check Delaunay criteria
   double sa, ca;
   iMath::sincos(r1, r2, sa, ca);
 
@@ -182,95 +292,10 @@ bool DelanayTriangulator::needRotate(const OrEdge * e, const Vec3f & cw, double 
   return dln < 0;
 }
 
-
-
-void DelanayTriangulator::split()
+void DelaunayTriangulator::postbuild(Triangles & tris)
 {
-  std::set<OrEdge*> adj_used;
-  std::set<OrEdge *> eg_list;
-
-  for (OrEdgesList::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
-  {
-    OrEdge * e = i->get();
-    if ( adj_used.find(e) != adj_used.end() )
-      continue;
-
-    if ( e->get_adjacent() && e->length() > splitThreshold_ )
-    {
-      eg_list.insert(e);
-      if ( e->get_adjacent() )
-        adj_used.insert(e->get_adjacent());
-    }
-  }
-
-  int itersN = 0;
-  for ( ; !eg_list.empty(); ++itersN)
-  {
-    std::set<OrEdge *>::iterator iter = eg_list.begin();
-    OrEdge * e = *iter;
-    eg_list.erase(iter);
-
-    OrEdge * adj = e->get_adjacent();
-    if ( !adj )
-      continue;
-
-    Vec3f p;
-    if ( !getSplitPoint(e, p) )
-      continue;
-
-    int index = (int)container_.points().size();
-    container_.points().push_back(p);
-
-    if ( !e->splitEdge(index) )
-      throw std::runtime_error("couldn't split edge");
-
-    OrEdge * a1 = e->prev();
-    OrEdge * b1 = a1->get_adjacent();
-    OrEdge * c1 = b1->prev();
-
-    OrEdge * a2 = adj->next();
-    OrEdge * b2 = a2->get_adjacent();
-    OrEdge * c2 = b2->next();
-
-    if ( c2 != c1->get_adjacent() )
-      throw std::runtime_error("wrong topology");
-
-    std::list<OrEdge*> egs;
-    egs.push_back(a1);
-    egs.push_back(c1);
-    egs.push_back(a2);
-    egs.push_back(e);
-
-    OrEdge * rnext = e->next();
-    OrEdge * lprev = adj->prev();
-    OrEdge * c2next = c2->next();
-
-    std::set<OrEdge*> edges;
-    edges.insert(e);
-    edges.insert(c1);
-    edges.insert(b1);
-    edges.insert(rnext);
-    edges.insert(lprev);
-    edges.insert(c2next);
-
-    makeDelaunay(edges, eg_list);
-
-    for (std::list<OrEdge*>::iterator i = egs.begin(); i != egs.end(); ++i)
-    {
-      OrEdge * e1 = *i;
-      double l1 = e1->length();
-      if ( !e1->get_adjacent() || l1 < splitThreshold_ )
-        continue;
-
-      eg_list.insert(e1);
-    }
-  }
-}
-
-void DelanayTriangulator::postbuild(Triangles & tris)
-{
-  std::set<const OrEdge *> used;
-  for (OrEdgesList::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
+  EdgesSet_const used;
+  for (OrEdgesList_shared::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
   {
     const OrEdge * e = i->get();
     if ( used.find(e) != used.end() )
@@ -284,7 +309,7 @@ void DelanayTriangulator::postbuild(Triangles & tris)
   }
 }
 
-void DelanayTriangulator::prebuild()
+void DelaunayTriangulator::prebuild()
 {
   OrEdge * curr = 0, * first = 0;
   for (size_t i = 0; i < container_.points().size(); ++i)
@@ -310,7 +335,7 @@ void DelanayTriangulator::prebuild()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DelanayTriangulator::intrusionPoint(OrEdge * from)
+void DelaunayTriangulator::intrusionPoint(OrEdge * from)
 {
   OrEdge * cv_edge = findConvexEdge(from);
   if ( !cv_edge )
@@ -367,7 +392,7 @@ void DelanayTriangulator::intrusionPoint(OrEdge * from)
   }
 }
 
-OrEdge * DelanayTriangulator::findConvexEdge(OrEdge * from)
+OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
 {
   if ( !from )
     return 0;
@@ -390,7 +415,7 @@ OrEdge * DelanayTriangulator::findConvexEdge(OrEdge * from)
   return 0;
 }
 
-OrEdge * DelanayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
+OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
 {
   if ( !cv_edge )
     return 0;

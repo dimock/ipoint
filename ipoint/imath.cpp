@@ -93,6 +93,9 @@ Vec3f iMath::dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, b
 {
   Vec3f dir01 = p1 - p0;
   double s = dir01.length();
+  if ( s < err )
+    return Vec3f(0, 0, (p0-q).length());
+
   dir01.norm();
   Vec3f dir0q = q - p0;
   Vec3f cp = dir01 ^ dir0q;

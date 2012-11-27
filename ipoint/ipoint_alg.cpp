@@ -202,7 +202,7 @@ bool IntrusionPointAlgorithm::triangulate()
   if ( tris_.size() > 0 )
     return true;
 
-  DelanayTriangulator dtr(points_);
+  DelaunayTriangulator dtr(points_);
 
   try
   {

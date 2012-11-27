@@ -81,7 +81,7 @@ private:
 };
 
 typedef boost::shared_ptr<OrEdge> OrEdge_shared;
-typedef std::list<OrEdge_shared> OrEdgesList;
+typedef std::list<OrEdge_shared> OrEdgesList_shared;
 
 class EdgesContainer
 {
@@ -93,11 +93,11 @@ public:
   OrEdge * new_edge(int o, int d);
   const Points3f & points() const { return points_; }
   Points3f & points() { return points_; }
-  const OrEdgesList & edges() const { return edges_; }
-  OrEdgesList & edges() { return edges_; }
+  const OrEdgesList_shared & edges() const { return edges_; }
+  OrEdgesList_shared & edges() { return edges_; }
 
 private:
 
-  OrEdgesList edges_;
+  OrEdgesList_shared edges_;
   Points3f & points_;
 };
