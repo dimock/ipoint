@@ -1,7 +1,7 @@
 #include "imath.h"
 
 
-static const double err = 1e-10;
+extern const double iMath::err = 1e-10;
 
 bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, const Vec3f & q1, Vec3f & r, double & dist)
 {
@@ -91,6 +91,7 @@ bool iMath::line_line_isect(const Vec3f & p, const Vec3f & rp, const Vec3f & q, 
 
 Vec3f iMath::dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & outside)
 {
+  outside = false;
   Vec3f dir01 = p1 - p0;
   double s = dir01.length();
   if ( s < err )

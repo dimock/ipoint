@@ -56,11 +56,6 @@ void DelaunayTriangulator::split()
     OrEdge * e = *iter;
     to_split.erase(iter);
 
-    if ( e->org() == 11 && e->dst() == 25 || e->org() == 25 && e->dst() == 11 )
-    {
-      int ttt = 0;
-    }
-
     OrEdge * adj = e->get_adjacent();
     if ( !adj )
       continue;
@@ -212,37 +207,29 @@ bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vec3f & p) const
   const Vec3f & p1 = container_.points().at(edge->dst());
   p = (p0 + p1) * 0.5;
 
-  // thin triangle?
+  // thin V-pair of triangles?
   const Vec3f & q0 = container_.points().at(edge->next()->dst());
   const Vec3f & q1 = container_.points().at(adj->next()->dst());
 
-  double stopThreshold = splitThreshold_*0.1;
-
-  double dist0 = (q0 - p).length();
-  double dist1 = (q1 - p).length();
-  if ( dist0 < stopThreshold || dist1 < thinThreshold_ )
-    return false;
-
-  bool outside;
+  bool outside = false;
   double h = iMath::dist_to_line(p0, q0, p, outside).length();
-  if ( h < thinThreshold_ )
+  if ( h < thinThreshold_ && outside )
     return false;
 
   h = iMath::dist_to_line(p1, q0, p, outside).length();
-  if ( h < thinThreshold_ )
+  if ( h < thinThreshold_ && outside )
     return false;
 
   h = iMath::dist_to_line(p0, q1, p, outside).length();
-  if ( h < thinThreshold_ )
+  if ( h < thinThreshold_ && outside )
     return false;
 
   h = iMath::dist_to_line(p1, q1, p, outside).length();
-  if ( h < thinThreshold_ )
+  if ( h < thinThreshold_ && outside )
     return false;
 
   return true;
 }
-
 
 bool DelaunayTriangulator::needRotate(const OrEdge * edge, const Vec3f & cw, double threshold) const
 {
@@ -343,7 +330,7 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
 
   // wrong topology!
   if ( !cv_edge->prev() )
-    return;
+    throw std::runtime_error("wrong topology given");
 
   // 1 triangle
   if ( cv_edge->prev()->prev() == cv_edge->next() )
@@ -412,7 +399,8 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
       return curr;
   }
 
-  return 0;
+  // only singular triangles?
+  return from;
 }
 
 OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
@@ -427,7 +415,6 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   const Vec3f & p0 = container_.points().at(i);
   const Vec3f & p1 = container_.points().at(j);
   const Vec3f & p2 = container_.points().at(k);
-
 
   bool outside = false;
   Vec3f vdist_p1 = dist_to_line(p0, p2, p1, outside);

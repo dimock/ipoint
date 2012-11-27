@@ -5,6 +5,8 @@
 namespace iMath
 {
 
+extern const double err;
+
 bool edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, const Vec3f & q1, Vec3f & r, double & dist);
 
 bool edge_halfline_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, const Vec3f & rq, Vec3f & r, double & dist);
