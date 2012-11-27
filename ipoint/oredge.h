@@ -44,6 +44,7 @@ public:
 
   // rotate this & adjacent edges 90 deg CW
   void rotate();
+
   OrEdge * next() const;
   OrEdge * prev() const;
   
