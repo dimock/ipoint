@@ -23,11 +23,19 @@ DelaunayTriangulator::~DelaunayTriangulator()
 
 void DelaunayTriangulator::triangulate(Triangles & tris)
 {
-  for ( ; makeDelaunay() > 0; );
+  for ( ;; )
+  {
+    if ( makeDelaunay() == 0 )
+      break;
+  }
 
   split();
 
-  for ( ; makeDelaunay() > 0; );
+  for ( ;; )
+  {
+    if ( makeDelaunay() == 0 )
+      break;
+  }
 
   postbuild(tris);
 }
@@ -337,7 +345,27 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
     return;
 
   OrEdge * ir_edge = findIntrudeEdge(cv_edge);
-  if ( !ir_edge )
+
+  if ( ir_edge )
+  {
+    OrEdge * cv_prev = cv_edge->prev();
+    OrEdge * ir_next = ir_edge->next();
+    if ( !cv_prev || !ir_next )
+      return;
+
+    OrEdge * e = container_.new_edge(ir_edge->dst(), cv_edge->org());
+    OrEdge * a = e->create_adjacent();
+
+    e->set_next(cv_edge);
+    ir_edge->set_next(e);
+
+    cv_prev->set_next(a);
+    a->set_next(ir_next);
+
+    intrusionPoint(e);
+    intrusionPoint(a);
+  }
+  else
   {
     OrEdge * prev = cv_edge->prev();
     OrEdge * next = cv_edge->next();
@@ -351,31 +379,11 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
 
     pprev->set_next(e);
     e->set_next(next);
-    
+
     cv_edge->set_next(a);
     a->set_next(prev);
 
     intrusionPoint(e);
-  }
-  else
-  {
-    OrEdge * prev = cv_edge->prev();
-    OrEdge * next = ir_edge->next();
-
-    if ( !prev || !next )
-      return;
-
-    OrEdge * e = container_.new_edge(ir_edge->dst(), cv_edge->org());
-    OrEdge * a = e->create_adjacent();
-
-    e->set_next(cv_edge);
-    ir_edge->set_next(e);
-
-    prev->set_next(a);
-    a->set_next(next);
-
-    intrusionPoint(e);
-    intrusionPoint(a);
   }
 }
 

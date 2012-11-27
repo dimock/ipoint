@@ -5,8 +5,6 @@
 
 class DelaunayTriangulator
 {
-  friend class OrEdge;
-
   typedef std::set <OrEdge*> EdgesSet;
   typedef std::set <const OrEdge*> EdgesSet_const;
   typedef std::list<OrEdge*> EdgesList;
@@ -22,7 +20,10 @@ private:
 
   void prebuild();
   bool needRotate(const OrEdge * e, const Vec3f & cw, double threshold) const;
+
+  // returns number of edges rotated
   int  makeDelaunay();
+
   void makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_split, EdgesSet & to_exclude);
   bool getSplitPoint(const OrEdge * , Vec3f & ) const;
   void split();
