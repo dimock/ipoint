@@ -57,21 +57,10 @@ public:
 
   // get triangle representation
   Triangle tri() const;
-  
-  // comparison
-  bool operator < (const OrEdge & other) const;
-  bool operator == (const OrEdge & other) const;
-  bool touches(const OrEdge & other) const;
 
   // geometry
-  Rect3f rect() const;
   double length() const;
   Vec3f  dir() const;
-
-  // math
-  bool intersect(const Rect3f & r) const;
-  bool isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const;
-  bool isectEdge(const OrEdge & other, Vec3f & r, double & dist) const;
 
   // data
 private:

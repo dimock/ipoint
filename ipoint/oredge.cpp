@@ -1,5 +1,4 @@
 #include "oredge.h"
-#include "delaunay.h"
 
 OrEdge::OrEdge(EdgesContainer * container) :
   org_(-1), dst_(-1), container_(container), next_(0), adjacent_(0)
@@ -190,31 +189,6 @@ Triangle OrEdge::tri() const
   return Triangle(org(), dst(), next()->dst());
 }
 
-// comparision
-bool OrEdge::operator < (const OrEdge & other) const
-{
-  return org() < other.org() || org() == other.org() && dst() < other.dst();
-}
-
-bool OrEdge::operator == (const OrEdge & other) const
-{
-  return org() == other.org() && dst() == other.dst();
-}
-
-bool OrEdge::touches(const OrEdge & other) const
-{
-  return org() == other.org() || org() == other.dst() || dst() == other.org() || dst() == other.dst();
-}
-
-// geometry
-Rect3f OrEdge::rect() const
-{
-  Rect3f rect;
-  rect.add(container_->points().at(org()));
-  rect.add(container_->points().at(dst()));
-  return rect;
-}
-
 double OrEdge::length() const
 {
   return (container_->points().at(org()) - container_->points().at(dst())).length();
@@ -227,21 +201,6 @@ Vec3f OrEdge::dir() const
   return r;
 }
 
-// math
-bool OrEdge::intersect(const Rect3f & r) const
-{
-  return rect().intersecting(r);
-}
-
-bool OrEdge::isectEdge(const Vec3f & p0, const Vec3f & p1, Vec3f & r, double & dist) const
-{
-  return iMath::edges_isect(container_->points().at(org()), container_->points().at(dst()), p0, p1, r, dist);
-}
-
-bool OrEdge::isectEdge(const OrEdge & other, Vec3f & r, double & dist) const
-{
-  return isectEdge( other.container_->points().at(other.org()), other.container_->points().at(other.dst()), r, dist);
-}
 //////////////////////////////////////////////////////////////////////////
 OrEdge * EdgesContainer::new_edge(int o, int d)
 {
