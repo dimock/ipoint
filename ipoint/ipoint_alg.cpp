@@ -36,14 +36,24 @@ void IntrusionPointAlgorithm::load(const QString & fname)
     if ( slist.size() < 2 )
       break;
 
-    Vec3f p;
+    Vec3f p, n(0,0,1);
     p.x = slist[0].toDouble();
     p.y = slist[1].toDouble();
 
-    points_.push_back(p);
+    if ( slist.size() > 2 )
+      p.z = slist[2].toDouble();
+
+    if ( slist.size() > 5 )
+    {
+      n.x = slist[3].toDouble();
+      n.y = slist[4].toDouble();
+      n.z = slist[5].toDouble();
+    }
+
+    verts_.push_back( Vertex(p, n) );
   }
 
-  pointCount_ = points_.size();
+  pointCount_ = verts_.size();
   closed_ = true;
 
   triangulate();
@@ -57,12 +67,12 @@ void IntrusionPointAlgorithm::save(const QString & fname) const
 
   QTextStream qts(&qf);
 
-  size_t n = std::min(pointCount_, points_.size());
+  size_t n = std::min(pointCount_, verts_.size());
 
   qts << tr("{\n");
   for (size_t i = 0; i < n; ++i)
   {
-    const Vec3f & p = points_.at(i);
+    const Vec3f & p = verts_.at(i).p();
     QString str;
     str.sprintf("  {%g, %g}\n", p.x, p.y);
     qts << str;
@@ -74,7 +84,7 @@ void IntrusionPointAlgorithm::reset()
 {
   closed_ = false;
   pointCount_ = 0;
-  points_.clear();
+  verts_.clear();
   rect_.makeInvalid();
   tris_.clear();
 }
@@ -95,8 +105,8 @@ void IntrusionPointAlgorithm::addPoint(const Vec3f & pt, bool close)
   }
   else
   {
-      points_.push_back(pt);
-      pointCount_ = points_.size();
+      verts_.push_back( Vertex(pt, Vec3f(0,0,1)) );
+      pointCount_ = verts_.size();
   }
   recalc();
 }
@@ -108,17 +118,17 @@ bool IntrusionPointAlgorithm::isClosed() const
 
 bool IntrusionPointAlgorithm::haveSelfIsect(const Vec3f & q1, Vec3f & r) const
 {
-  if ( points_.size() < 2 )
+  if ( verts_.size() < 2 )
     return false;
-  double p0dist = (q1-points_.front()).length();
+  double p0dist = (q1-verts_.front().p()).length();
   bool to1stpt = false;
   if ( p0dist < 1e-2 )
     to1stpt = true;
-  const Vec3f & q0 = points_.back();
-  for (size_t i = 0; i < points_.size()-2; ++i)
+  const Vec3f & q0 = verts_.back().p();
+  for (size_t i = 0; i < verts_.size()-2; ++i)
   {
-    const Vec3f & p0 = points_.at(i);
-    const Vec3f & p1 = points_.at(i+1);
+    const Vec3f & p0 = verts_.at(i).p();
+    const Vec3f & p1 = verts_.at(i+1).p();
     double dist;
     if ( !edges_isect(p0, p1, q0, q1, r, dist) )
       continue;
@@ -126,10 +136,10 @@ bool IntrusionPointAlgorithm::haveSelfIsect(const Vec3f & q1, Vec3f & r) const
       continue;
     return true;
   }
-  const Vec3f & p0 = points_.at(points_.size()-2);
-  const Vec3f & p1 = points_.at(points_.size()-1);
-  Vec3f rp = p1-p0; rp.norm();
-  Vec3f rq = q1-q0; rq.norm();
+  const Vec3f & p0 = verts_.at(verts_.size()-2).p();
+  const Vec3f & p1 = verts_.at(verts_.size()-1).p();
+  Vec3f rp = p1-p0; rp.normalize();
+  Vec3f rq = q1-q0; rq.normalize();
   double v = rp*rq;
   if ( v < -0.9999 )
   {
@@ -143,23 +153,23 @@ void IntrusionPointAlgorithm::removePoint(size_t idx)
 {
   if ( idx < pointsCount() )
   {
-    Points3f::iterator i = points_.begin();
+    Vertices::iterator i = verts_.begin();
     advance(i, idx);
-    points_.erase(i);
+    verts_.erase(i);
   }
   recalc();
-  if ( points_.size() == 0 )
+  if ( verts_.size() == 0 )
     reset();
 }
 
 void IntrusionPointAlgorithm::insertPoint(size_t idx, const Vec3f & pt)
 {
-  if ( idx >= points_.size() || !closed_ )
+  if ( idx >= verts_.size() || !closed_ )
     return;
 
-  Points3f::iterator iter = points_.begin();
+  Vertices::iterator iter = verts_.begin();
   advance(iter, idx);
-  points_.insert(iter, pt);
+  verts_.insert(iter, Vertex(pt, Vec3f(0,0,1)));
   recalc();
 }
 
@@ -168,9 +178,9 @@ size_t IntrusionPointAlgorithm::pointsCount() const
   return pointCount_;
 }
 
-Vec3f & IntrusionPointAlgorithm::operator [] (size_t idx)
+const Vec3f & IntrusionPointAlgorithm::operator [] (size_t idx) const
 {
-  return points_.at(idx);
+  return verts_.at(idx).p();
 }
 
 void IntrusionPointAlgorithm::setCursorPt(const Vec3f & pt)
@@ -191,9 +201,9 @@ const Rect3f & IntrusionPointAlgorithm::getRect() const
 void IntrusionPointAlgorithm::recalc()
 {
   rect_.makeInvalid();
-  for (size_t i = 0; i < points_.size(); ++i)
-    rect_.add(points_.at(i));
-  if ( !closed_ || points_.size() == 0 )
+  for (size_t i = 0; i < verts_.size(); ++i)
+    rect_.add(verts_.at(i).p());
+  if ( !closed_ || verts_.size() == 0 )
     return;
 }
 
@@ -202,7 +212,7 @@ bool IntrusionPointAlgorithm::triangulate()
   if ( tris_.size() > 0 )
     return true;
 
-  DelaunayTriangulator dtr(points_);
+  DelaunayTriangulator dtr(verts_);
 
   try
   {

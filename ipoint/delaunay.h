@@ -11,24 +11,27 @@ class DelaunayTriangulator
 
 public:
   
-  DelaunayTriangulator(Points3f & points);
+  DelaunayTriangulator(Vertices & verts);
   virtual ~DelaunayTriangulator();
 
   void triangulate(Triangles & tris);
+  void save3d(const char * fname, const char * meshName, const char * plineName) const;
+  void saveBoundary(const char * fname) const;
 
 private:
 
   void prebuild();
-  bool needRotate(const OrEdge * e, const Vec3f & cw, double threshold) const;
+  bool needRotate(const OrEdge * e, double threshold) const;
 
   // returns number of edges rotated
   int  makeDelaunay();
 
   void makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_split, EdgesSet & to_exclude);
-  bool getSplitPoint(const OrEdge * , Vec3f & ) const;
+  bool getSplitPoint(const OrEdge * , Vertex & ) const;
   void split();
-  void postbuild(Triangles &);
   void intrusionPoint(OrEdge * from);
+
+  void postbuild(Triangles &) const;
 
   // edge->org() is convex point
   OrEdge * findConvexEdge(OrEdge * from);
@@ -42,6 +45,5 @@ private:
   double thinThreshold_;
 
   EdgesContainer container_;
-
-  Vec3f cw_;
+  std::vector<size_t> boundary_;
 };

@@ -77,17 +77,33 @@ class EdgesContainer
 {
 public:
 
-  EdgesContainer(Points3f & points) : points_(points)
+  EdgesContainer(Vertices & verts) : verts_(verts)
   {}
 
   OrEdge * new_edge(int o, int d);
-  const Points3f & points() const { return points_; }
-  Points3f & points() { return points_; }
-  const OrEdgesList_shared & edges() const { return edges_; }
-  OrEdgesList_shared & edges() { return edges_; }
+
+  Vertices & verts()
+  {
+    return verts_;
+  }
+
+  const Vertices & verts() const
+  {
+    return verts_;
+  }
+
+  const OrEdgesList_shared & edges() const
+  {
+    return edges_;
+  }
+
+  OrEdgesList_shared & edges()
+  {
+    return edges_;
+  }
 
 private:
 
   OrEdgesList_shared edges_;
-  Points3f & points_;
+  Vertices & verts_;
 };

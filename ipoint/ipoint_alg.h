@@ -25,7 +25,7 @@ public:
   void insertPoint(size_t idx, const Vec3f & pt);
   void removePoint(size_t idx);
   size_t pointsCount() const;
-  Vec3f & operator [] (size_t idx);
+  const Vec3f & operator [] (size_t idx) const;
   void setCursorPt(const Vec3f & );
   const Vec3f & getCursorPt() const;
   bool isCursorPtValid() const;
@@ -44,7 +44,7 @@ private:
 
   bool triangulate();
 
-  Points3f points_;
+  Vertices verts_;
   Vec3f cursorPt_;
   Rect3f rect_;
   bool closed_;
