@@ -29,7 +29,7 @@ DelaunayTriangulator::~DelaunayTriangulator()
 
 void DelaunayTriangulator::triangulate(Triangles & tris)
 {
-  //save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
+  save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
 
   //for ( ;; )
   //{
