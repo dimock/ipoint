@@ -1,7 +1,7 @@
 #pragma once
 
 #include "oredge.h"
-#include <queue>
+#include <set>
 
 class DelaunayTriangulator
 {
