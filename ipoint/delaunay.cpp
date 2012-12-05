@@ -2,17 +2,23 @@
 #include "imath.h"
 #include <time.h>
 #include <algorithm>
+#include <fstream>
+#include <limits>
 
 using namespace iMath;
 
-DelaunayTriangulator::DelaunayTriangulator(Points3f & points) :
-  container_(points),
+DelaunayTriangulator::DelaunayTriangulator(Vertices & verts) :
+  container_(verts),
   edgeLength_(0), rotateThreshold_(0), splitThreshold_(0), thinThreshold_(0)
 {
-  if ( container_.points().size() < 3 )
+  if ( container_.verts().size() < 3 )
     throw std::logic_error("not enough points for triangulation");
 
-  cw_ = iMath::cw_dir(container_.points());
+  //cw_ = iMath::cw_dir(container_.verts());
+
+  boundary_.resize(container_.verts().size());
+  for (size_t i = 0; i < boundary_.size(); ++i)
+    boundary_[i] = i;
 
   prebuild();
 }
@@ -23,19 +29,25 @@ DelaunayTriangulator::~DelaunayTriangulator()
 
 void DelaunayTriangulator::triangulate(Triangles & tris)
 {
-  for ( ;; )
-  {
-    if ( makeDelaunay() == 0 )
-      break;
-  }
+  //save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
 
-  split();
+  //for ( ;; )
+  //{
+  //  if ( makeDelaunay() == 0 )
+  //    break;
+  //}
 
-  for ( ;; )
-  {
-    if ( makeDelaunay() == 0 )
-      break;
-  }
+  //save3d("D:\\Scenes\\3dpad\\intrusion_delaunay.txt", "Mesh", "Boundary");
+
+  //split();
+
+  //for ( ;; )
+  //{
+  //  if ( makeDelaunay() == 0 )
+  //    break;
+  //}
+
+  //save3d("D:\\Scenes\\3dpad\\splitted_delaunay.txt", "Mesh", "Boundary");
 
   postbuild(tris);
 }
@@ -68,12 +80,12 @@ void DelaunayTriangulator::split()
     if ( !adj )
       continue;
 
-    Vec3f p;
-    if ( !getSplitPoint(e, p) )
+    Vertex v;
+    if ( !getSplitPoint(e, v) )
       continue;
 
-    int index = (int)container_.points().size();
-    container_.points().push_back(p);
+    int index = (int)container_.verts().size();
+    container_.verts().push_back(v);
 
     if ( !e->splitEdge(index) )
       throw std::runtime_error("couldn't split edge");
@@ -145,7 +157,7 @@ int DelaunayTriangulator::makeDelaunay()
   for (EdgesSet::iterator i = to_delanay.begin(); i != to_delanay.end(); ++i)
   {
     OrEdge * e = *i;
-    if ( !needRotate(e, cw_, rotateThreshold_) )
+    if ( !needRotate(e, rotateThreshold_) )
       continue;
 
     e->rotate();
@@ -164,7 +176,7 @@ void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_spl
     OrEdge * e = *i;
     to_delanay.erase(i);
 
-    if ( !needRotate(e, cw_, rotateThreshold_) )
+    if ( !needRotate(e, rotateThreshold_) )
       continue;
 
     e->rotate();
@@ -198,7 +210,7 @@ void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_spl
   }
 }
 
-bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vec3f & p) const
+bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vertex & v) const
 {
   if ( !edge )
     return false;
@@ -211,13 +223,13 @@ bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vec3f & p) const
   if ( l < splitThreshold_ )
     return false;
 
-  const Vec3f & p0 = container_.points().at(edge->org());
-  const Vec3f & p1 = container_.points().at(edge->dst());
-  p = (p0 + p1) * 0.5;
+  const Vec3f & p0 = container_.verts().at(edge->org()).p();
+  const Vec3f & p1 = container_.verts().at(edge->dst()).p();
+  Vec3f p = (p0 + p1) * 0.5;
 
   // thin V-pair of triangles?
-  const Vec3f & q0 = container_.points().at(edge->next()->dst());
-  const Vec3f & q1 = container_.points().at(adj->next()->dst());
+  const Vec3f & q0 = container_.verts().at(edge->next()->dst()).p();
+  const Vec3f & q1 = container_.verts().at(adj->next()->dst()).p();
 
   bool outside = false;
   double h = iMath::dist_to_line(p0, q0, p, outside).length();
@@ -236,10 +248,17 @@ bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vec3f & p) const
   if ( h < thinThreshold_ && outside )
     return false;
 
+  const Vec3f & n0 = container_.verts().at(edge->org()).n();
+  const Vec3f & n1 = container_.verts().at(edge->dst()).n();
+
+  Vec3f n = n0 + n1;
+  n.normalize();
+  v = Vertex(p, n);
+
   return true;
 }
 
-bool DelaunayTriangulator::needRotate(const OrEdge * edge, const Vec3f & cw, double threshold) const
+bool DelaunayTriangulator::needRotate(const OrEdge * edge, double threshold) const
 {
   if ( !edge )
     return false;
@@ -248,35 +267,28 @@ bool DelaunayTriangulator::needRotate(const OrEdge * edge, const Vec3f & cw, dou
   if ( !adj )
     return false;
 
-  const Vec3f & po = container_.points().at(edge->org());
-  const Vec3f & pd = container_.points().at(edge->dst());
+  const Vec3f & po = container_.verts().at(edge->org()).p();
+  const Vec3f & pd = container_.verts().at(edge->dst()).p();
 
-  const Vec3f & pr = container_.points().at(edge->next()->dst());
-  const Vec3f & pl = container_.points().at(adj->next()->dst());
+  const Vec3f & pr = container_.verts().at(edge->next()->dst()).p();
+  const Vec3f & pl = container_.verts().at(adj->next()->dst()).p();
 
-  bool outside;
+  bool outside = false;
   Vec3f dist_r = iMath::dist_to_line(po, pd, pr, outside);
-  if ( dist_r.length() < threshold )
+  if ( dist_r.length() < threshold || outside )
     return false;
 
   Vec3f dist_l = iMath::dist_to_line(po, pd, pl, outside);
-  if ( dist_l.length() < threshold )
+  if ( dist_l.length() < threshold || outside )
     return false;
 
+  // now check Delaunay criteria
   Vec3f r1 = -edge->next()->dir();
   Vec3f r2 =  edge->prev()->dir();
 
   Vec3f r3 = -adj->next()->dir();
   Vec3f r4 =  adj->prev()->dir();
 
-  Vec3f n1 = r1^r4;
-  Vec3f n2 = r3^r2;
-
-  // V-pair of triangles - don't rotate!
-  if ( n1*cw <= 0 || n2*cw <= 0 )
-    return false;
-
-  // check Delaunay criteria
   double sa, ca;
   iMath::sincos(r1, r2, sa, ca);
 
@@ -287,7 +299,7 @@ bool DelaunayTriangulator::needRotate(const OrEdge * edge, const Vec3f & cw, dou
   return dln < 0;
 }
 
-void DelaunayTriangulator::postbuild(Triangles & tris)
+void DelaunayTriangulator::postbuild(Triangles & tris) const
 {
   EdgesSet_const used;
   for (OrEdgesList_shared::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
@@ -307,9 +319,9 @@ void DelaunayTriangulator::postbuild(Triangles & tris)
 void DelaunayTriangulator::prebuild()
 {
   OrEdge * curr = 0, * first = 0;
-  for (size_t i = 0; i < container_.points().size(); ++i)
+  for (size_t i = 0; i < container_.verts().size(); ++i)
   {
-    OrEdge * e = container_.new_edge((int)i, (int)((i+1) % container_.points().size()));
+    OrEdge * e = container_.new_edge((int)i, (int)((i+1) % container_.verts().size()));
     edgeLength_ += e->length();
     if ( !first )
       first = e;
@@ -392,22 +404,36 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
   if ( !from )
     return 0;
 
+  OrEdge * best = 0;
+  double length_min = std::numeric_limits<double>::max();
+
   for (OrEdge * curr = from->next(); curr != from; curr = curr->next())
   {
     int i = curr->prev()->org();
     int j = curr->org();
     int k = curr->dst();
 
-    const Vec3f & p0 = container_.points().at(i);
-    const Vec3f & p1 = container_.points().at(j);
-    const Vec3f & p2 = container_.points().at(k);
+    const Vertex & pre = container_.verts().at(i);
+    const Vertex & org = container_.verts().at(j);
+    const Vertex & dst = container_.verts().at(k);
 
-    Vec3f v = (p1 - p0) ^ (p2 - p0);
-    if ( cw_ * v > 0 ) // CW
-      return curr;
+    Vec3f dir = (org.p() - pre.p()) ^ (dst.p() - org.p());
+    Vec3f cw = org.n() + pre.n() + dst.n();
+
+    if ( cw * dir > 0 ) // CW
+    {
+      double leng = (pre.p() - dst.p()).length();
+      if ( leng < length_min || !best )
+      {
+        best = curr;
+        length_min = leng;
+      }
+    }
   }
+  
+  if ( best )
+    return best;
 
-  // only singular triangles?
   return from;
 }
 
@@ -420,12 +446,13 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   int j = cv_edge->org();
   int k = cv_edge->dst();
 
-  const Vec3f & p0 = container_.points().at(i);
-  const Vec3f & p1 = container_.points().at(j);
-  const Vec3f & p2 = container_.points().at(k);
+  const Vertex & v0 = container_.verts().at(i);
+  const Vertex & v1 = container_.verts().at(j);
+  const Vertex & v2 = container_.verts().at(k);
 
   bool outside = false;
-  Vec3f vdist_p1 = dist_to_line(p0, p2, p1, outside);
+  Vec3f vdist_p1 = dist_to_line(v0.p(), v2.p(), v1.p(), outside);
+  double dist_p1 = vdist_p1.length();
   double dist = 0;
 
   OrEdge * ir_edge = 0;
@@ -433,20 +460,126 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
 
   for (OrEdge * curr = cv_edge->next(); curr != last; curr = curr->next())
   {
-    int n = curr->dst();
-    const Vec3f & q = container_.points().at(n);
-    Vec3f vd = dist_to_line(p0, p2, q, outside);
-    bool inside = inside_tri(p0, p1, p2, q);
-    if ( inside && vd*vdist_p1 > 0 )
-    {
-      double d = vd.length();
-      if ( d > dist )
-      {
-        ir_edge = curr;
-        dist = d;
-      }
-    }
+    int k = curr->dst();
+    const Vertex & q = container_.verts().at(k);
+    Vec3f vd = dist_to_line(v0.p(), v2.p(), q.p(), outside);
+    bool inside = inside_tri(v0.p(), v1.p(), v2.p(), q.p());
+    if ( !inside || vd*vdist_p1 <= 0 )
+      continue;
+
+    double d = vd.length();
+    if ( d <= dist || d >= dist_p1 )
+      continue;
+
+    ir_edge = curr;
+    dist = d;
   }
 
   return ir_edge;
+}
+
+void DelaunayTriangulator::save3d(const char * fname, const char * meshName, const char * plineName) const
+{
+  if ( !fname || !meshName )
+    return;
+
+  std::ofstream ofs(fname);
+
+  Triangles tris;
+  postbuild(tris);
+
+  const Vertices & verts = container_.verts();
+
+  Vec3f color(0,1,0);
+
+  ofs << "Mesh \"" << meshName << "\" {\n";
+
+  ofs << "  Wireframe {\n";
+  ofs << "    ( true )\n";
+  ofs << "  }\n";
+
+  ofs << "  Shaded {\n";
+  ofs << "    ( true )\n";
+  ofs << "  }\n";
+
+  ofs << "  DefaultColor {\n";
+  ofs << "    ( " << color.x << ", " << color.y << ", " << color.z << " )\n";
+  ofs << "  }\n";
+
+  ofs << "  Coords {\n";
+  for (Vertices::const_iterator i = verts.begin(); i != verts.end(); ++i)
+  {
+    const Vec3f & p = i->p();
+    ofs << "    ( " << p.x << ", " << p.y << ", " << p.z << " )\n";
+  }
+  ofs << "  }\n";
+
+
+  ofs << "  Faces {\n";
+  for (Triangles::const_iterator i = tris.begin(); i != tris.end(); ++i)
+  {
+    const Triangle & t = *i;
+    ofs << "    ( " << t.x << ", " << t.y << ", " << t.z << " )\n";
+  }
+  ofs << "  }\n";
+
+  ofs << "}\n";
+
+
+  if ( plineName )
+  {
+    Vec3f lineColor(1,0,0);
+
+    ofs << "Polyline \"" << plineName << "\" {\n";
+
+    ofs << "  DefaultColor {\n";
+    ofs << "    ( " << lineColor.x << ", " << lineColor.y << ", " << lineColor.z << " )\n";
+    ofs << "  }\n";
+
+    ofs << "  DrawPoints {\n";
+    ofs << "    (true)\n";
+    ofs << "  }\n";
+
+    ofs << "  DrawLines {\n";
+    ofs << "    (true)\n";
+    ofs << "  }\n";
+
+    ofs << "  Points {\n";
+
+    for (size_t i = 0; i < boundary_.size(); ++i)
+    {
+      size_t j = boundary_[i];
+      const Vec3f & p = verts.at(j).p();
+      ofs << "    (" << p.x << ", " << p.y << ", " << p.z << ")\n";
+    }
+    ofs << "  }\n";
+
+    ofs << "}\n";
+  }
+}
+
+
+void DelaunayTriangulator::saveBoundary(const char * fname) const
+{
+  if ( !fname )
+    return;
+
+  std::ofstream ofs(fname);
+
+  Triangles tris;
+  postbuild(tris);
+
+  const Vertices & verts = container_.verts();
+
+  ofs << "{\n";
+
+  for (size_t i = 0; i < boundary_.size(); ++i)
+  {
+    size_t j = boundary_[i];
+    const Vec3f & p = verts.at(j).p();
+    const Vec3f & n = verts.at(j).n();
+    ofs << "  {" << p.x << ", " << p.y << ", " << p.z << "} {" << n.x << ", " << n.y << ", " << n.z << "}\n";
+  }
+
+  ofs << "}\n";
 }
