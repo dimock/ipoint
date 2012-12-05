@@ -29,25 +29,25 @@ DelaunayTriangulator::~DelaunayTriangulator()
 
 void DelaunayTriangulator::triangulate(Triangles & tris)
 {
-  save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
+  //save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
 
-  //for ( ;; )
-  //{
-  //  if ( makeDelaunay() == 0 )
-  //    break;
-  //}
+  for ( ;; )
+  {
+    if ( makeDelaunay() == 0 )
+      break;
+  }
 
   //save3d("D:\\Scenes\\3dpad\\intrusion_delaunay.txt", "Mesh", "Boundary");
 
-  //split();
+  split();
 
-  //for ( ;; )
-  //{
-  //  if ( makeDelaunay() == 0 )
-  //    break;
-  //}
+  for ( ;; )
+  {
+    if ( makeDelaunay() == 0 )
+      break;
+  }
 
-  //save3d("D:\\Scenes\\3dpad\\splitted_delaunay.txt", "Mesh", "Boundary");
+  save3d("D:\\Scenes\\3dpad\\splitted_delaunay.txt", "Mesh", "Boundary");
 
   postbuild(tris);
 }
@@ -417,7 +417,7 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
     const Vertex & org = container_.verts().at(j);
     const Vertex & dst = container_.verts().at(k);
 
-    Vec3f dir = (org.p() - pre.p()) ^ (dst.p() - org.p());
+    Vec3f dir = (pre.p() - org.p()) ^ (dst.p() - org.p());
     Vec3f cw = org.n() + pre.n() + dst.n();
 
     if ( cw * dir > 0 ) // CW
