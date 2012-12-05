@@ -186,18 +186,18 @@ bool OrEdge::splitEdge(int i)
 
 Triangle OrEdge::tri() const
 {
-  return Triangle(org(), next()->dst(), dst());
+  return Triangle(org(), dst(), next()->dst());
 }
 
 double OrEdge::length() const
 {
-  return (container_->verts().at(org()).p() - container_->verts().at(dst()).p()).length();
+  return (container_->points().at(org()) - container_->points().at(dst())).length();
 }
 
 Vec3f OrEdge::dir() const
 {
-  Vec3f r = container_->verts().at(org()).p() - container_->verts().at(dst()).p();
-  r.normalize();
+  Vec3f r = container_->points().at(org()) - container_->points().at(dst());
+  r.norm();
   return r;
 }
 

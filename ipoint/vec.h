@@ -96,7 +96,7 @@ struct Vec3f
         return sqrt(x*x + y*y + z*z);
     }
 
-    Vec3f & normalize()
+    Vec3f & norm()
     {
         double r = 1.0f / length();
         x *= r; y *= r; z *= r;
@@ -142,23 +142,8 @@ struct Triangle
   };
 };
 
-class Vertex
-{
-public:
-
-  Vertex(const Vec3f & p, const Vec3f & n) : p_(p), n_(n) {}
-  Vertex() {}
-
-  const Vec3f & p() const { return p_; }
-  const Vec3f & n() const { return n_; }
-
-private:
-
-  Vec3f p_, n_;
-};
 
 typedef std::vector<Vec3f> Points3f;
-typedef std::vector<Vertex> Vertices;
 typedef std::vector<Triangle> Triangles;
 
 

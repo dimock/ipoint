@@ -11,7 +11,7 @@ bool iMath::edges_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q0, co
   Vec3f n = rp ^ rq;
   if ( n.length() < err*lpq )
     return false;
-  n.normalize();
+  n.norm();
   dist = n*(q0-p0);
   Vec3f g0 = q0 - n*dist;
   Vec3f g1 = q1 - n*dist;
@@ -97,7 +97,7 @@ Vec3f iMath::dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, b
   if ( s < err )
     return Vec3f(0, 0, (p0-q).length());
 
-  dir01.normalize();
+  dir01.norm();
   Vec3f dir0q = q - p0;
   Vec3f cp = dir01 ^ dir0q;
   double t = dir01*dir0q;
@@ -126,20 +126,20 @@ bool iMath::inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, con
   return s0 == s1 && s0 == s2;
 }
 
-Vec3f iMath::cw_dir(const Vertices & verts)
+Vec3f iMath::cw_dir(const Points3f & points)
 {
-  if ( verts.size() < 3 )
+  if ( points.size() < 3 )
     return Vec3f();
 
   Vec3f cw_dir;
-  const Vec3f & p0 = verts[0].p();
-  for (size_t i = 1; i < verts.size(); ++i)
+  const Vec3f & p0 = points[0];
+  for (size_t i = 1; i < points.size(); ++i)
   {
     size_t j = i+1;
-    if ( j >= verts.size() )
+    if ( j >= points.size() )
       break;
-    const Vec3f & p1 = verts[i].p();
-    const Vec3f & p2 = verts[j].p();
+    const Vec3f & p1 = points[i];
+    const Vec3f & p2 = points[j];
     Vec3f v = (p1 - p0) ^ (p2 - p0);
     cw_dir += v;
   }

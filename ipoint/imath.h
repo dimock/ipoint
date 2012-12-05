@@ -19,7 +19,7 @@ Vec3f dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & o
 
 bool inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, const Vec3f & q);
 
-Vec3f cw_dir(const Vertices & verts);
+Vec3f cw_dir(const Points3f & points);
 
 void sincos(const Vec3f & r1, const Vec3f & r2, double & s, double & c);
 
