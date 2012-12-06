@@ -23,4 +23,13 @@ Vec3f cw_dir(const Vertices & verts);
 
 void sincos(const Vec3f & r1, const Vec3f & r2, double & s, double & c);
 
+inline double sqr2(double t)
+{
+  return t*t;
+}
+
+inline double sqr3(double t)
+{
+  return t*t*t;
+}
 }

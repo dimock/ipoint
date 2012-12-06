@@ -29,7 +29,7 @@ DelaunayTriangulator::~DelaunayTriangulator()
 
 void DelaunayTriangulator::triangulate(Triangles & tris)
 {
-  //save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
+  save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
 
   for ( ;; )
   {
@@ -37,7 +37,7 @@ void DelaunayTriangulator::triangulate(Triangles & tris)
       break;
   }
 
-  //save3d("D:\\Scenes\\3dpad\\intrusion_delaunay.txt", "Mesh", "Boundary");
+  save3d("D:\\Scenes\\3dpad\\intrusion_delaunay.txt", "Mesh", "Boundary");
 
   split();
 
@@ -70,7 +70,7 @@ void DelaunayTriangulator::split()
     to_exclude.insert(a);
   }
 
-  for ( ; !to_split.empty(); )
+  for (int n = 0; !to_split.empty(); ++n)
   {
     EdgesSet::iterator iter = to_split.begin();
     OrEdge * e = *iter;
@@ -157,11 +157,11 @@ int DelaunayTriangulator::makeDelaunay()
   for (EdgesSet::iterator i = to_delanay.begin(); i != to_delanay.end(); ++i)
   {
     OrEdge * e = *i;
-    if ( !needRotate(e, rotateThreshold_) )
+    if ( !needRotate(e) )
       continue;
 
-    e->rotate();
-    num++;
+    if ( e->rotate() )
+      num++;
   }
 
   return num;
@@ -170,16 +170,17 @@ int DelaunayTriangulator::makeDelaunay()
 void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_split, EdgesSet & to_exclude)
 {
   EdgesList egs;
-  for ( ; !to_delanay.empty(); )
+  for (int n = 0; !to_delanay.empty(); ++n)
   {
     EdgesSet::iterator i = to_delanay.begin();
     OrEdge * e = *i;
     to_delanay.erase(i);
 
-    if ( !needRotate(e, rotateThreshold_) )
+    if ( !needRotate(e) )
       continue;
 
-    e->rotate();
+    if ( !e->rotate() )
+      continue;
 
     OrEdge * rnext = e->next();
     OrEdge * rprev = e->prev();
@@ -210,6 +211,38 @@ void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_spl
   }
 }
 
+Vec3f DelaunayTriangulator::calcPt(const Vec3f & p0, const Vec3f & p1, const Vec3f & n0, const Vec3f & n1, double t) const
+{
+  Vec3f dir = p1 - p0;
+  if ( dir.length() > iMath::err )
+    dir.normalize();
+  else
+    return p0;
+
+  Vec3f x0 = n0 ^ dir;
+  if ( x0.length() > iMath::err )
+    x0.normalize();
+
+  Vec3f x1 = n1 ^ dir;
+  if ( x1.length() > iMath::err )
+    x1.normalize();
+
+  Vec3f r0 = x0 ^ n0;
+  Vec3f r1 = x1 ^ n1;
+
+  if ( r0.length() > iMath::err )
+    r0.normalize();
+
+  if ( r1.length() > iMath::err )
+    r1.normalize();
+
+  Vec3f q1 = p0 + r0;
+  Vec3f q2 = p1 - r1;
+  Vec3f p = p0*sqr3(1.-t) + q1 * t * sqr2(1.-t) + q2 * sqr2(t) * (1-t) + p1 * sqr3(t);
+
+  return p;
+}
+
 bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vertex & v) const
 {
   if ( !edge )
@@ -225,7 +258,13 @@ bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vertex & v) const
 
   const Vec3f & p0 = container_.verts().at(edge->org()).p();
   const Vec3f & p1 = container_.verts().at(edge->dst()).p();
-  Vec3f p = (p0 + p1) * 0.5;
+
+  const Vec3f & n0 = container_.verts().at(edge->org()).n();
+  const Vec3f & n1 = container_.verts().at(edge->dst()).n();
+
+  Vec3f p = (p0 + p1)*0.5;
+  Vec3f n = n0 + n1;
+  n.normalize();
 
   // thin V-pair of triangles?
   const Vec3f & q0 = container_.verts().at(edge->next()->dst()).p();
@@ -248,17 +287,12 @@ bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vertex & v) const
   if ( h < thinThreshold_ && outside )
     return false;
 
-  const Vec3f & n0 = container_.verts().at(edge->org()).n();
-  const Vec3f & n1 = container_.verts().at(edge->dst()).n();
-
-  Vec3f n = n0 + n1;
-  n.normalize();
   v = Vertex(p, n);
 
   return true;
 }
 
-bool DelaunayTriangulator::needRotate(const OrEdge * edge, double threshold) const
+bool DelaunayTriangulator::needRotate(const OrEdge * edge) const
 {
   if ( !edge )
     return false;
@@ -275,11 +309,11 @@ bool DelaunayTriangulator::needRotate(const OrEdge * edge, double threshold) con
 
   bool outside = false;
   Vec3f dist_r = iMath::dist_to_line(po, pd, pr, outside);
-  if ( dist_r.length() < threshold || outside )
+  if ( dist_r.length() < rotateThreshold_ || outside )
     return false;
 
   Vec3f dist_l = iMath::dist_to_line(po, pd, pl, outside);
-  if ( dist_l.length() < threshold || outside )
+  if ( dist_l.length() < rotateThreshold_ || outside )
     return false;
 
   // now check Delaunay criteria
@@ -336,7 +370,7 @@ void DelaunayTriangulator::prebuild()
 
   rotateThreshold_ = edgeLength_*0.0001;
   splitThreshold_ = edgeLength_*1.5;
-  thinThreshold_  = edgeLength_*0.1;
+  thinThreshold_  = edgeLength_*0.2;
 
   intrusionPoint(curr);
 }

@@ -444,6 +444,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\icommon.h"
+				>
+			</File>
+			<File
 				RelativePath="imath.h"
 				>
 			</File>
@@ -614,26 +618,6 @@
 			UniqueIdentifier="{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}"
 			>
 			<File
-				RelativePath="release\moc_ipoint.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="debug\moc_ipoint.cpp"
 				>
 				<FileConfiguration
@@ -654,7 +638,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="release\moc_ipoint_alg.cpp"
+				RelativePath="release\moc_ipoint.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -694,7 +678,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="release\moc_iview.cpp"
+				RelativePath="release\moc_ipoint_alg.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -734,7 +718,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="release\qrc_ipoint.cpp"
+				RelativePath="release\moc_iview.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -766,6 +750,26 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\qrc_ipoint.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
 					ExcludedFromBuild="true"
 					>
 					<Tool

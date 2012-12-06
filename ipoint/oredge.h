@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rect.h"
+#include "icommon.h"
 #include <list>
 #include <imath.h>
 #include <boost/shared_ptr.hpp>
@@ -43,10 +44,13 @@ public:
   void clear_adjacent();
 
   // rotate this & adjacent edges 90 deg CW
-  void rotate();
+  bool rotate();
 
-  OrEdge * next() const;
-  OrEdge * prev() const;
+  OrEdge * next();
+  OrEdge * prev();
+
+  const OrEdge * next() const;
+  const OrEdge * prev() const;
   
   // return old 'next'
   OrEdge * set_next(OrEdge * e);
@@ -64,7 +68,11 @@ public:
 
   // data
 private:
-  
+
+  void verifyTopology(std::set<const OrEdge*> & verified) const;
+
+  const OrEdge * findConnection() const;
+
   int org_, dst_;
   OrEdge * next_, * adjacent_;
   EdgesContainer * container_;

@@ -20,8 +20,10 @@ public:
 
 private:
 
+  Vec3f calcPt(const Vec3f & p0, const Vec3f & p1, const Vec3f & n0, const Vec3f & n1, double t) const;
+
   void prebuild();
-  bool needRotate(const OrEdge * e, double threshold) const;
+  bool needRotate(const OrEdge * e) const;
 
   // returns number of edges rotated
   int  makeDelaunay();

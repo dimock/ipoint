@@ -40,25 +40,23 @@ void OrEdge::clear_adjacent()
 }
 
 // topology
-void OrEdge::rotate()
+bool OrEdge::rotate()
 {
-  if ( !get_adjacent() )
-    return;
+  OrEdge * adj = get_adjacent();
+  if ( !adj )
+    return false;
 
   OrEdge * rnext = next();
   OrEdge * rprev = prev();
-  OrEdge * lnext = get_adjacent()->next();
-  OrEdge * lprev = get_adjacent()->prev();
+  OrEdge * lnext = adj->next();
+  OrEdge * lprev = adj->prev();
 
-  // verify topology
-  if ( !rnext || !rprev || !lnext || !lprev )
-    return;
+  // verify topology before rotation
+  //DO_VERIFY( verifyTopology(std::set<const OrEdge*>()) );
 
-  if ( rprev->next() != this || lprev->next() != get_adjacent() )
-    return;
-
-  if ( rnext->next() != rprev || lnext->next() != lprev )
-    return;
+  const OrEdge * conn = findConnection();
+  if ( conn )
+    return false;
 
   // rotate this 90 deg CW
   this->set_next(rprev);
@@ -66,25 +64,167 @@ void OrEdge::rotate()
   lnext->set_next(this);
 
   // rotate adjacent 90 deg CW
-  get_adjacent()->set_next(lprev);
+  adj->set_next(lprev);
   lprev->set_next(rnext);
   rnext->set_next(get_adjacent());
+
+  int org0 = this->org();
+  int dst0 = this->dst();
 
   this->org_ = lprev->org();
   this->dst_ = rprev->org();
 
-  get_adjacent()->org_ = this->dst();
-  get_adjacent()->dst_ = this->org();
+  adj->org_ = this->dst();
+  adj->dst_ = this->org();
+
+  THROW_IF( org() == dst(), "bad topology" );
+
+  // verify topology after
+  //DO_VERIFY( verifyTopology(std::set<const OrEdge*>()) );
+
+  return true;
 }
 
-OrEdge * OrEdge::next() const
+const OrEdge * OrEdge::findConnection() const
+{
+  const OrEdge * adj = get_adjacent();
+  if ( !adj )
+    return 0;
+
+  const OrEdge * rnext = next();
+  const OrEdge * rprev = prev();
+  const OrEdge * lnext = adj->next();
+  const OrEdge * lprev = adj->prev();
+
+  // verify topology
+  THROW_IF( !rnext || !rprev || !lnext || !lprev, "bad topology" );
+  THROW_IF( rprev->next() != this || lprev->next() != adj, "bad topology" );
+  THROW_IF( rnext->next() != rprev || lnext->next() != lprev, "bad topology" );
+  THROW_IF( lprev->org() == rprev->org(), "bad topology" );
+  THROW_IF( lprev->org() != lnext->dst() || rprev->org() != rnext->dst(), "bad topology" );
+
+  int idx0 = rnext->dst();
+  int idx1 = lnext->dst();
+
+  const OrEdge * conn = 0;
+
+  bool stop = false;
+  const OrEdge * curr = rnext;
+
+  for ( ; curr; )
+  {
+    curr = curr->get_adjacent();
+    if ( !curr )
+      break;
+
+    THROW_IF( !curr->next(), "bad topology" );
+
+    curr = curr->next()->next();
+
+    THROW_IF( !curr, "bad topology" );
+    
+    if ( curr == rnext )
+    {
+      stop = true;
+      break;
+    }
+
+    if ( curr->org() == idx1 && curr->dst() == idx0 )
+    {
+      conn = curr;
+      break;
+    }
+  }
+
+  if ( stop || conn )
+    return conn;
+
+  curr = rprev;
+
+  for ( ; curr; )
+  {
+    curr = curr->get_adjacent();
+    if ( !curr )
+      break;
+
+    THROW_IF( !curr->next(), "bad topology" );
+
+    curr = curr->next();
+
+    if ( curr == rprev )
+    {
+      stop = true;
+      break;
+    }
+
+    if ( curr->org() == idx0 && curr->dst() == idx1 )
+    {
+      conn = curr;
+      break;
+    }
+  }
+
+  return conn;
+}
+
+void OrEdge::verifyTopology(std::set<const OrEdge*> & verified) const
+{
+  if ( verified.find(this) != verified.end() )
+    return;
+
+  verified.insert(this);
+
+  THROW_IF( org() == dst(), "bad topology");
+
+  const OrEdge * rprev = prev();
+  const OrEdge * rnext = next();
+
+  THROW_IF( !rprev || !rnext, "bad topology" );
+  THROW_IF( !rnext->next() || rnext->next() != rprev, "bad topology" );
+  THROW_IF( rnext->dst() != rprev->org(), "bad topology" );
+
+  const OrEdge * adj = get_adjacent();
+  if ( adj )
+  {
+    const OrEdge * lprev = adj->prev();
+    const OrEdge * lnext = adj->next();
+
+    THROW_IF( !lprev || !lnext, "bad topology" );
+    THROW_IF( lprev->org() == rprev->org(), "bad topology" );
+
+    adj->verifyTopology(verified);
+  }
+
+  rnext->verifyTopology(verified);
+  rprev->verifyTopology(verified);
+}
+
+OrEdge * OrEdge::next()
 {
   return next_;
 }
 
-OrEdge * OrEdge::prev() const
+OrEdge * OrEdge::prev()
 {
   OrEdge * prev = next();
+  while ( prev )
+  {
+    if ( prev->dst() == org() )
+      break;
+
+    prev = prev->next();
+  }
+  return prev;
+}
+
+const OrEdge * OrEdge::next() const
+{
+  return next_;
+}
+
+const OrEdge * OrEdge::prev() const
+{
+  const OrEdge * prev = next();
   while ( prev )
   {
     if ( prev->dst() == org() )
@@ -107,8 +247,7 @@ bool OrEdge::splitTri(int i)
   OrEdge * rnext = next();
   OrEdge * rprev = prev();
 
-  if ( !rnext || !rprev || rnext->next() != rprev )
-    return false;
+  //DO_VERIFY( verifyTopology(std::set<const OrEdge*>()) );
 
   OrEdge * a1 = container_->new_edge(dst(), i);
   OrEdge * b1 = container_->new_edge(i, org());
@@ -131,6 +270,8 @@ bool OrEdge::splitTri(int i)
   a3->set_next(b3);
   b3->set_next(rprev);
 
+  //DO_VERIFY( verifyTopology(std::set<const OrEdge*>()) );
+
   return true;
 }
 
@@ -143,7 +284,7 @@ bool OrEdge::splitEdge(int i)
   OrEdge * rnext = next();
 
   if ( !rprev || !rnext || rprev != rnext->next() )
-    return false;
+    throw std::runtime_error("bad topology");
 
   int p1 = rnext->dst();
 
@@ -164,7 +305,7 @@ bool OrEdge::splitEdge(int i)
   OrEdge * lnext = get_adjacent()->next();
 
   if ( !lprev || !lnext || lprev != lnext->next() )
-    return false;
+    throw std::runtime_error("bad topology");
 
   int p2 = lnext->dst();
 
@@ -204,6 +345,10 @@ Vec3f OrEdge::dir() const
 //////////////////////////////////////////////////////////////////////////
 OrEdge * EdgesContainer::new_edge(int o, int d)
 {
+  if( o == d )
+  {
+    return 0;
+  }
   OrEdge_shared edge(new OrEdge(o, d, this));
   edges_.push_back(edge);
   return edge.get();
