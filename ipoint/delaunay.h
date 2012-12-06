@@ -43,6 +43,9 @@ private:
   // edge->dst() is intrude point
   OrEdge * findIntrudeEdge(OrEdge * cv_edge);
 
+  void smooth(double coef, int itersN);
+  void smoothPt(OrEdge * edge, double coef);
+
   double edgeLength_;
   double rotateThreshold_;
   double splitThreshold_;

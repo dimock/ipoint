@@ -1,6 +1,6 @@
 #pragma once
 
-#define USE_VERIFICATION
+#undef USE_VERIFICATION
 
 #ifdef USE_VERIFICATION
   #define THROW_IF(cond, msg) if ( cond ) throw std::runtime_error(msg); else;

@@ -47,6 +47,8 @@ void DelaunayTriangulator::triangulate(Triangles & tris)
       break;
   }
 
+  smooth(0.2, 1);
+
   save3d("D:\\Scenes\\3dpad\\splitted_delaunay.txt", "Mesh", "Boundary");
 
   postbuild(tris);
@@ -538,6 +540,56 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   return ir_edge;
 }
 
+void DelaunayTriangulator::smooth(double coef, int itersN)
+{
+  for (int n = 0; n < itersN; ++n)
+  for (OrEdgesList_shared::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
+  {
+    OrEdge * edge = i->get();
+    smoothPt(edge, coef);
+  }
+}
+
+void DelaunayTriangulator::smoothPt(OrEdge * edge, double coef)
+{
+  if ( !edge )
+    return;
+
+  const Vertex & v0 = container_.verts().at(edge->org());
+  const Vertex & v1 = container_.verts().at(edge->dst());
+
+  Vec3f pnt = v0.p() + v1.p();
+  Vec3f nor = v0.n() + v1.n();
+  int counter = 2;
+
+  THROW_IF( !edge->next() || !edge->next()->next(), "bad topology" );
+
+  for (OrEdge * curr = edge; curr; )
+  {
+    THROW_IF( !curr->next() || !curr->next()->next(), "bad topology" );
+
+    curr = curr->next()->next();
+    const Vertex & v = container_.verts().at(curr->org());
+    
+    pnt += v.p();
+    nor += v.n();
+    counter++;
+
+    curr = curr->get_adjacent();
+    if ( curr == edge )
+      break;
+  }
+
+  pnt *= 1.0 / counter;
+  nor.normalize();
+  Vec3f dp = pnt - v0.p();
+  dp *= coef;
+
+  pnt = v0.p() + dp;
+  container_.verts().at(edge->org()) = Vertex(pnt, nor);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void DelaunayTriangulator::save3d(const char * fname, const char * meshName, const char * plineName) const
 {
   if ( !fname || !meshName )
