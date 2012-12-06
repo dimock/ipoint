@@ -345,10 +345,6 @@ Vec3f OrEdge::dir() const
 //////////////////////////////////////////////////////////////////////////
 OrEdge * EdgesContainer::new_edge(int o, int d)
 {
-  if( o == d )
-  {
-    return 0;
-  }
   OrEdge_shared edge(new OrEdge(o, d, this));
   edges_.push_back(edge);
   return edge.get();

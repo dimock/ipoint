@@ -433,6 +433,25 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
   }
 }
 
+bool DelaunayTriangulator::isEdgeConvex(const OrEdge * edge) const
+{
+  if ( !edge )
+    return false;
+
+  int i = edge->prev()->org();
+  int j = edge->org();
+  int k = edge->dst();
+
+  const Vertex & pre = container_.verts().at(i);
+  const Vertex & org = container_.verts().at(j);
+  const Vertex & dst = container_.verts().at(k);
+
+  Vec3f dir = (pre.p() - org.p()) ^ (dst.p() - org.p());
+  Vec3f cw = org.n() + pre.n() + dst.n();
+
+  return cw * dir > 0;
+}
+
 OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
 {
   if ( !from )
@@ -451,17 +470,14 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
     const Vertex & org = container_.verts().at(j);
     const Vertex & dst = container_.verts().at(k);
 
-    Vec3f dir = (pre.p() - org.p()) ^ (dst.p() - org.p());
-    Vec3f cw = org.n() + pre.n() + dst.n();
+    if ( !isEdgeConvex(curr) )
+      continue;
 
-    if ( cw * dir > 0 ) // CW
+    double leng = (pre.p() - dst.p()).length();
+    if ( leng < length_min || !best )
     {
-      double leng = (pre.p() - dst.p()).length();
-      if ( leng < length_min || !best )
-      {
-        best = curr;
-        length_min = leng;
-      }
+      best = curr;
+      length_min = leng;
     }
   }
   
@@ -484,6 +500,8 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   const Vertex & v1 = container_.verts().at(j);
   const Vertex & v2 = container_.verts().at(k);
 
+  Vec3f nor = v0.n() + v1.n() + v2.n();
+
   bool outside = false;
   Vec3f vdist_p1 = dist_to_line(v0.p(), v2.p(), v1.p(), outside);
   double dist_p1 = vdist_p1.length();
@@ -494,6 +512,10 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
 
   for (OrEdge * curr = cv_edge->next(); curr != last; curr = curr->next())
   {
+    // intrude edge couldn't be convex
+    if ( isEdgeConvex(curr) )
+      continue;
+
     int k = curr->dst();
     const Vertex & q = container_.verts().at(k);
     Vec3f vd = dist_to_line(v0.p(), v2.p(), q.p(), outside);
@@ -502,7 +524,11 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
       continue;
 
     double d = vd.length();
-    if ( d <= dist || d >= dist_p1 )
+    double dist_icv = (q.p()-v1.p()).length();
+    if ( d <= dist || d >= dist_p1 || dist_icv > dist_p1*2.0 )
+      continue;
+
+    if ( nor*q.n() < 0 )
       continue;
 
     ir_edge = curr;

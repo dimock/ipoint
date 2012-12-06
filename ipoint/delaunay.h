@@ -38,6 +38,8 @@ private:
   // edge->org() is convex point
   OrEdge * findConvexEdge(OrEdge * from);
 
+  bool isEdgeConvex(const OrEdge * ) const;
+
   // edge->dst() is intrude point
   OrEdge * findIntrudeEdge(OrEdge * cv_edge);
 
