@@ -36,9 +36,9 @@ private:
   void postbuild(Triangles &) const;
 
   // edge->org() is convex point
-  OrEdge * findConvexEdge(OrEdge * from);
+  OrEdge * findConvexEdge(OrEdge * from, OrEdge *& cv_prev);
 
-  bool isEdgeConvex(const OrEdge * ) const;
+  bool isEdgeConvex(const OrEdge * edge) const;
 
   // edge->dst() is intrude point
   OrEdge * findIntrudeEdge(OrEdge * cv_edge);

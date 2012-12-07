@@ -380,58 +380,62 @@ void DelaunayTriangulator::prebuild()
 //////////////////////////////////////////////////////////////////////////
 void DelaunayTriangulator::intrusionPoint(OrEdge * from)
 {
-  OrEdge * cv_edge = findConvexEdge(from);
-  if ( !cv_edge )
-    return;
+  EdgesList elist;
+  elist.push_back(from);
 
-  // wrong topology!
-  if ( !cv_edge->prev() )
-    throw std::runtime_error("wrong topology given");
-
-  // 1 triangle
-  if ( cv_edge->prev()->prev() == cv_edge->next() )
-    return;
-
-  OrEdge * ir_edge = findIntrudeEdge(cv_edge);
-
-  if ( ir_edge )
+  for ( ; !elist.empty(); )
   {
-    OrEdge * cv_prev = cv_edge->prev();
-    OrEdge * ir_next = ir_edge->next();
-    if ( !cv_prev || !ir_next )
-      return;
+    OrEdge * curr = elist.back();
+    elist.pop_back();
 
-    OrEdge * e = container_.new_edge(ir_edge->dst(), cv_edge->org());
-    OrEdge * a = e->create_adjacent();
+    OrEdge * cv_prev = 0;
+    OrEdge * cv_edge = findConvexEdge(curr, cv_prev);
 
-    e->set_next(cv_edge);
-    ir_edge->set_next(e);
+    // wrong topology!
+    if ( !cv_prev || !cv_edge->next() )
+      throw std::runtime_error("wrong topology given");
 
-    cv_prev->set_next(a);
-    a->set_next(ir_next);
+    // 1 triangle
+    if ( cv_prev == cv_edge->next()->next() )
+      continue;
 
-    intrusionPoint(e);
-    intrusionPoint(a);
-  }
-  else
-  {
-    OrEdge * prev = cv_edge->prev();
-    OrEdge * next = cv_edge->next();
-    if ( !next || !prev )
-      return;
+    OrEdge * ir_edge = findIntrudeEdge(cv_edge);
+    if ( ir_edge )
+    {
+      OrEdge * cv_next = cv_edge->next();
+      OrEdge * ir_next = ir_edge->next();
+      if ( !cv_next || !ir_next )
+        return;
 
-    OrEdge * pprev = prev->prev();
+      OrEdge * e = container_.new_edge(ir_edge->dst(), cv_edge->dst());
+      OrEdge * a = e->create_adjacent();
 
-    OrEdge * e = container_.new_edge(prev->org(), cv_edge->dst());
-    OrEdge * a = e->create_adjacent();
+      e->set_next(cv_next);
+      ir_edge->set_next(e);
 
-    pprev->set_next(e);
-    e->set_next(next);
+      cv_edge->set_next(a);
+      a->set_next(ir_next);
 
-    cv_edge->set_next(a);
-    a->set_next(prev);
+      elist.push_back(e);
+      elist.push_back(a);
+    }
+    else
+    {
+      OrEdge * cv_next = cv_edge->next();
+      if ( !cv_next )
+         throw std::runtime_error("wrong topology given");;
 
-    intrusionPoint(e);
+      OrEdge * e = container_.new_edge(cv_edge->org(), cv_next->dst());
+      OrEdge * a = e->create_adjacent();
+
+      cv_prev->set_next(e);
+      e->set_next(cv_next->next());
+
+      cv_next->set_next(a);
+      a->set_next(cv_edge);
+
+      elist.push_back(e);
+    }
   }
 }
 
@@ -440,53 +444,60 @@ bool DelaunayTriangulator::isEdgeConvex(const OrEdge * edge) const
   if ( !edge )
     return false;
 
-  int i = edge->prev()->org();
-  int j = edge->org();
-  int k = edge->dst();
+  const Vertex & pre = container_.verts().at( edge->org() );
+  const Vertex & cur = container_.verts().at( edge->dst() );
+  const Vertex & nxt = container_.verts().at( edge->next()->dst() );
 
-  const Vertex & pre = container_.verts().at(i);
-  const Vertex & org = container_.verts().at(j);
-  const Vertex & dst = container_.verts().at(k);
-
-  Vec3f dir = (pre.p() - org.p()) ^ (dst.p() - org.p());
-  Vec3f cw = org.n() + pre.n() + dst.n();
+  Vec3f dir = (pre.p() - cur.p()) ^ (nxt.p() - cur.p());
+  Vec3f cw = cur.n() + pre.n() + nxt.n();
 
   return cw * dir > 0;
 }
 
-OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from)
+OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from, OrEdge *& cv_prev)
 {
   if ( !from )
     return 0;
 
-  OrEdge * best = 0;
+  cv_prev = 0;
+  OrEdge * best = 0, * prev = 0;
+
   double length_min = std::numeric_limits<double>::max();
 
-  for (OrEdge * curr = from->next(); curr != from; curr = curr->next())
+  for ( OrEdge * curr = from;; )
   {
-    int i = curr->prev()->org();
-    int j = curr->org();
-    int k = curr->dst();
+    OrEdge * next = curr->next();
 
-    const Vertex & pre = container_.verts().at(i);
-    const Vertex & org = container_.verts().at(j);
-    const Vertex & dst = container_.verts().at(k);
+    THROW_IF( !next, "bad topology" );
 
-    if ( !isEdgeConvex(curr) )
-      continue;
+    const Vertex & pre = container_.verts().at( curr->org() );
+    const Vertex & nxt = container_.verts().at( next->dst() );
 
-    double leng = (pre.p() - dst.p()).length();
-    if ( leng < length_min || !best )
+    if ( isEdgeConvex(curr) )
     {
-      best = curr;
-      length_min = leng;
+      double leng = (nxt.p() - pre.p()).length();
+      if ( leng < length_min || !best )
+      {
+        best = curr;
+        cv_prev = prev;
+        length_min = leng;
+      }
     }
+
+    prev = curr;
+    curr = next;
+
+    if ( curr == from )
+      break;
   }
   
-  if ( best )
-    return best;
+  if ( !best )
+    best = from;
 
-  return from;
+  if ( !cv_prev )
+    cv_prev = best->prev();
+
+  return best;
 }
 
 OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
@@ -494,43 +505,39 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
   if ( !cv_edge )
     return 0;
 
-  int i = cv_edge->prev()->org();
-  int j = cv_edge->org();
-  int k = cv_edge->dst();
+  const Vertex & pre = container_.verts().at( cv_edge->org() );
+  const Vertex & cur = container_.verts().at( cv_edge->dst() );
+  const Vertex & nxt = container_.verts().at( cv_edge->next()->dst() );
 
-  const Vertex & v0 = container_.verts().at(i);
-  const Vertex & v1 = container_.verts().at(j);
-  const Vertex & v2 = container_.verts().at(k);
-
-  Vec3f nor = v0.n() + v1.n() + v2.n();
+  Vec3f nor = pre.n() + cur.n() + nxt.n();
 
   bool outside = false;
-  Vec3f vdist_p1 = dist_to_line(v0.p(), v2.p(), v1.p(), outside);
-  double dist_p1 = vdist_p1.length();
+  Vec3f vdist_cur = dist_to_line(pre.p(), nxt.p(), cur.p(), outside);
+  double dist_cur = vdist_cur.length();
   double dist = 0;
 
   OrEdge * ir_edge = 0;
-  OrEdge * last = cv_edge->prev()->prev();
-
-  for (OrEdge * curr = cv_edge->next(); curr != last; curr = curr->next())
+  for ( OrEdge * curr = cv_edge->next()->next();
+          curr != cv_edge && curr->next() != cv_edge;
+          curr = curr->next())
   {
     // intrude edge couldn't be convex
     if ( isEdgeConvex(curr) )
       continue;
 
-    int k = curr->dst();
-    const Vertex & q = container_.verts().at(k);
-    Vec3f vd = dist_to_line(v0.p(), v2.p(), q.p(), outside);
-    bool inside = inside_tri(v0.p(), v1.p(), v2.p(), q.p());
-    if ( !inside || vd*vdist_p1 <= 0 )
+    const Vertex & iv = container_.verts().at( curr->dst() );
+    Vec3f vd = dist_to_line(pre.p(), nxt.p(), iv.p(), outside);
+    bool inside = inside_tri(pre.p(), cur.p(), nxt.p(), iv.p());
+
+    if ( !inside || vd*vdist_cur <= 0 )
       continue;
 
     double d = vd.length();
-    double dist_icv = (q.p()-v1.p()).length();
-    if ( d <= dist || d >= dist_p1 || dist_icv > dist_p1*2.0 )
+    double dist_icv = (iv.p()-cur.p()).length();
+    if ( d <= dist || d >= dist_cur || dist_icv > dist_cur*2.0 )
       continue;
 
-    if ( nor*q.n() < 0 )
+    if ( nor*iv.n() < 0 )
       continue;
 
     ir_edge = curr;
