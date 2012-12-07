@@ -332,7 +332,7 @@ bool DelaunayTriangulator::needRotate(const OrEdge * edge) const
   iMath::sincos(r3, r4, sb, cb);
 
   double dln = sa*cb + sb*ca;
-  return dln < 0;
+  return dln < -iMath::err;
 }
 
 void DelaunayTriangulator::postbuild(Triangles & tris) const
@@ -371,8 +371,8 @@ void DelaunayTriangulator::prebuild()
     edgeLength_ /= container_.edges().size();
 
   rotateThreshold_ = edgeLength_*0.0001;
-  splitThreshold_ = edgeLength_*1.5;
-  thinThreshold_  = edgeLength_*0.2;
+  splitThreshold_ = edgeLength_*2.0;
+  thinThreshold_  = edgeLength_*0.25;
 
   intrusionPoint(curr);
 }
