@@ -65,6 +65,7 @@ public:
   // geometry
   double length() const;
   Vec3f  dir() const;
+  Rect3f rect() const;
 
   // data
 private:
@@ -77,6 +78,11 @@ private:
   OrEdge * next_, * adjacent_;
   EdgesContainer * container_;
 };
+
+inline bool intersect(const Rect3f & rc, const OrEdge & e)
+{
+  return rc.intersecting(e.rect());
+}
 
 typedef boost::shared_ptr<OrEdge> OrEdge_shared;
 typedef std::list<OrEdge_shared> OrEdgesList_shared;

@@ -342,6 +342,14 @@ Vec3f OrEdge::dir() const
   return r;
 }
 
+Rect3f OrEdge::rect() const
+{
+  Rect3f rc;
+  rc.add(container_->verts().at(org()).p());
+  rc.add(container_->verts().at(dst()).p());
+  return rc;
+}
+
 //////////////////////////////////////////////////////////////////////////
 OrEdge * EdgesContainer::new_edge(int o, int d)
 {

@@ -16,9 +16,17 @@ DelaunayTriangulator::DelaunayTriangulator(Vertices & verts) :
 
   //cw_ = iMath::cw_dir(container_.verts());
 
+  Rect3f rect;
   boundary_.resize(container_.verts().size());
   for (size_t i = 0; i < boundary_.size(); ++i)
+  {
     boundary_[i] = i;
+    const Vec3f & p = verts[boundary_[i]].p();
+    rect.add(p);
+  }
+
+  int depth = 5;
+  octree_.reset( new OcTree<OrEdge>(rect, depth) );
 
   prebuild();
 }
@@ -89,6 +97,9 @@ void DelaunayTriangulator::split()
     int index = (int)container_.verts().size();
     container_.verts().push_back(v);
 
+    octree_->remove(e);
+    octree_->remove(adj);
+
     if ( !e->splitEdge(index) )
       throw std::runtime_error("couldn't split edge");
 
@@ -99,6 +110,15 @@ void DelaunayTriangulator::split()
     OrEdge * a2 = adj->next();
     OrEdge * b2 = a2->get_adjacent();
     OrEdge * c2 = b2->next();
+
+    octree_->add(e);
+    octree_->add(adj);
+    octree_->add(a1);
+    octree_->add(b1);
+    octree_->add(c1);
+    octree_->add(a2);
+    octree_->add(b2);
+    octree_->add(c2);
 
     if ( c2 != c1->get_adjacent() )
       throw std::runtime_error("wrong topology");
@@ -162,8 +182,15 @@ int DelaunayTriangulator::makeDelaunay()
     if ( !needRotate(e) )
       continue;
 
+    OrEdge * a = e->get_adjacent();
+    octree_->remove(e);
+    octree_->remove(a);
+
     if ( e->rotate() )
       num++;
+
+    octree_->add(e);
+    octree_->add(a);
   }
 
   return num;
@@ -181,8 +208,15 @@ void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_spl
     if ( !needRotate(e) )
       continue;
 
+    OrEdge * a = e->get_adjacent();
+    octree_->remove(e);
+    octree_->remove(a);
+
     if ( !e->rotate() )
       continue;
+
+    octree_->add(e);
+    octree_->add(a);
 
     OrEdge * rnext = e->next();
     OrEdge * rprev = e->prev();
@@ -332,7 +366,17 @@ bool DelaunayTriangulator::needRotate(const OrEdge * edge) const
   iMath::sincos(r3, r4, sb, cb);
 
   double dln = sa*cb + sb*ca;
-  return dln < -iMath::err;
+  if ( dln > -iMath::err )
+    return false;
+
+  // self-intersections
+  int i0 = edge->next()->dst();
+  int i1 = adj->next()->dst();
+  OrEdge temp(i0, i1, const_cast<EdgesContainer*>(&container_));
+  if ( selfIsect(&temp) )
+    return false;
+
+  return true;
 }
 
 void DelaunayTriangulator::postbuild(Triangles & tris) const
@@ -358,6 +402,9 @@ void DelaunayTriangulator::prebuild()
   for (size_t i = 0; i < container_.verts().size(); ++i)
   {
     OrEdge * e = container_.new_edge((int)i, (int)((i+1) % container_.verts().size()));
+    
+    octree_->add(e);
+
     edgeLength_ += e->length();
     if ( !first )
       first = e;
@@ -410,6 +457,9 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
       OrEdge * e = container_.new_edge(ir_edge->dst(), cv_edge->dst());
       OrEdge * a = e->create_adjacent();
 
+      octree_->add(e);
+      octree_->add(a);
+
       e->set_next(cv_next);
       ir_edge->set_next(e);
 
@@ -427,6 +477,9 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
 
       OrEdge * e = container_.new_edge(cv_edge->org(), cv_next->dst());
       OrEdge * a = e->create_adjacent();
+
+      octree_->add(e);
+      octree_->add(a);
 
       cv_prev->set_next(e);
       e->set_next(cv_next->next());
@@ -540,6 +593,10 @@ OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
     if ( nor*iv.n() < 0 )
       continue;
 
+    OrEdge temp(cv_edge->dst(), curr->dst(), &container_);
+    if ( selfIsect(&temp) )
+      continue;
+
     ir_edge = curr;
     dist = d;
   }
@@ -594,6 +651,51 @@ void DelaunayTriangulator::smoothPt(OrEdge * edge, double coef)
 
   pnt = v0.p() + dp;
   container_.verts().at(edge->org()) = Vertex(pnt, nor);
+}
+//////////////////////////////////////////////////////////////////////////
+// Self-intersections
+bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
+{
+  EdgesSet_const items, used;
+  octree_->collect(edge->rect(), items);
+
+  for (EdgesSet_const::iterator i = items.begin(); i != items.end(); ++i)
+  {
+    const OrEdge * e = *i;
+    if ( used.find(e) != used.end() )
+      continue;
+
+    THROW_IF ( !e->next() || !e->next()->next(), "bad topology" );
+
+    // is triangle
+    if ( e->next()->next()->next() != e )
+      continue;
+
+    // don't search triangle twice
+    used.insert( e->next() );
+    used.insert( e->next()->next() );
+
+    Triangle tr = e->tri();
+    if ( tr.x == edge->org() || tr.x == edge->dst() ||
+         tr.y == edge->org() || tr.y == edge->dst() ||
+         tr.z == edge->org() || tr.z == edge->dst() )
+    {
+      continue;
+    }
+
+    const Vec3f & ep0 = container_.verts().at(edge->org()).p();
+    const Vec3f & ep1 = container_.verts().at(edge->dst()).p();
+
+    const Vec3f & tp0 = container_.verts().at(tr.x).p();
+    const Vec3f & tp1 = container_.verts().at(tr.y).p();
+    const Vec3f & tp2 = container_.verts().at(tr.z).p();
+
+    Vec3f ip;
+    if ( iMath::edge_tri_isect(ep0, ep1, tp0, tp1, tp2, ip) )
+      return true;
+  }
+
+  return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

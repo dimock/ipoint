@@ -1,7 +1,7 @@
 #pragma once
 
 #include "oredge.h"
-#include <set>
+#include "octree.h"
 
 class DelaunayTriangulator
 {
@@ -46,6 +46,9 @@ private:
   void smooth(double coef, int itersN);
   void smoothPt(OrEdge * edge, double coef);
 
+  // self-intersections
+  bool selfIsect(OrEdge * edge) const;
+
   double edgeLength_;
   double rotateThreshold_;
   double splitThreshold_;
@@ -53,4 +56,6 @@ private:
 
   EdgesContainer container_;
   std::vector<size_t> boundary_;
+
+  boost::shared_ptr<OcTree<OrEdge>> octree_;
 };

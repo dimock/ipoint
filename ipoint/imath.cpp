@@ -119,11 +119,10 @@ bool iMath::inside_tri(const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, con
   Vec3f v1 = p12 ^ q1;
   Vec3f v2 = p20 ^ q2;
 
-  bool s0 = v0.z < 0;
-  bool s1 = v1.z < 0;
-  bool s2 = v2.z < 0;
+  bool b0 = v0 * v1 > 0;
+  bool b2 = v0 * v2 > 0;
 
-  return s0 == s1 && s0 == s2;
+  return b0 && b2;
 }
 
 Vec3f iMath::cw_dir(const Vertices & verts)
@@ -150,4 +149,74 @@ void iMath::sincos(const Vec3f & r1, const Vec3f & r2, double & s, double & c)
 {
   c = r1 * r2;
   s = sqrt(1.0 - c*c);
+}
+
+#include <fstream>
+
+bool iMath::edge_tri_isect(const Vec3f & ep0, const Vec3f & ep1, const Vec3f & tp0, const Vec3f & tp1, const Vec3f & tp2, Vec3f & ip)
+{
+  Vec3f r = ep1 - ep0;
+  if ( r.length() < err )
+    return false;
+
+  Vec3f n = (tp1 - tp0) ^ (tp2 - tp0);
+  if ( n.length() < err )
+    return false;
+  n.normalize();
+
+  double d = -n*tp0;
+  double w = r*n;
+  if ( fabs(w) < err )
+    return false;
+
+  double t = -(d + ep0*n)/w;
+  ip = r*t + ep0;
+  if ( t < 0.0 || t > 1.0 )
+    return false;
+
+  bool ok = inside_tri(tp0, tp1, tp2, ip);
+  if ( ok )
+  {
+    std::ofstream ofs("D:\\Scenes\\3dpad\\isect.txt");
+    Vec3f color(0,1,0);
+    const char * meshName = "EdgeIsect";
+
+    ofs << "Mesh \"" << meshName << "\" {\n";
+
+    ofs << "  Wireframe {\n";
+    ofs << "    ( true )\n";
+    ofs << "  }\n";
+
+    ofs << "  Shaded {\n";
+    ofs << "    ( true )\n";
+    ofs << "  }\n";
+
+    ofs << "  DefaultColor {\n";
+    ofs << "    ( " << color.x << ", " << color.y << ", " << color.z << " )\n";
+    ofs << "  }\n";
+
+    ofs << "  Coords {\n";
+    {
+      ofs << "    ( " << tp0.x << ", " << tp0.y << ", " << tp0.z << " )\n";
+      ofs << "    ( " << tp1.x << ", " << tp1.y << ", " << tp1.z << " )\n";
+      ofs << "    ( " << tp2.x << ", " << tp2.y << ", " << tp2.z << " )\n";
+    }
+    ofs << "  }\n";
+
+
+    ofs << "  Faces {\n";
+    {
+      ofs << "    ( 0, 1, 2 )\n";
+    }
+    ofs << "  }\n";
+
+    ofs << "}\n";
+
+    ofs << "Edges \"Edge\" {\n";
+
+    ofs << "  { (" << ep0.x << ", " << ep0.y << ", " << ep0.z << ") (" << ep1.x << ", " << ep1.y << ", " << ep1.z <<") (1, 0, 0) }\n";
+
+    ofs << "}\n";
+  }
+  return ok;
 }

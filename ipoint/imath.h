@@ -13,6 +13,8 @@ bool edge_halfline_isect(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, co
 
 bool line_line_isect(const Vec3f & p, const Vec3f & rp, const Vec3f & q, const Vec3f & rq, Vec3f & r, double & dist);
 
+bool edge_tri_isect(const Vec3f & ep0, const Vec3f & ep1, const Vec3f & tp0, const Vec3f & tp1, const Vec3f & tp2, Vec3f & ip);
+
 
 // returns vectorized distance, v.length() = abs(dist), dir * cw > 0 means q is right to line
 Vec3f dist_to_line(const Vec3f & p0, const Vec3f & p1, const Vec3f & q, bool & outside);
