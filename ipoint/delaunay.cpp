@@ -39,7 +39,7 @@ void DelaunayTriangulator::triangulate(Triangles & tris)
 {
   save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
 
-  for ( ;; )
+  for (int n = 0; n < 20; ++n)
   {
     if ( makeDelaunay() == 0 )
       break;
@@ -49,7 +49,7 @@ void DelaunayTriangulator::triangulate(Triangles & tris)
 
   split();
 
-  for ( ;; )
+  for (int n = 0; n < 20; ++n)
   {
     if ( makeDelaunay() == 0 )
       break;
@@ -526,14 +526,18 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from, OrEdge *& cv_prev)
     const Vertex & pre = container_.verts().at( curr->org() );
     const Vertex & nxt = container_.verts().at( next->dst() );
 
-    if ( isEdgeConvex(curr) )
+    if ( !isEdgeConvex(curr) )
     {
-      double leng = (nxt.p() - pre.p()).length();
-      if ( leng < length_min || !best )
+      Triangle tr(curr->org(), curr->dst(), curr->next()->dst());
+      if ( !selfIsect(tr) )
       {
-        best = curr;
-        cv_prev = prev;
-        length_min = leng;
+        double leng = (nxt.p() - pre.p()).length();
+        if ( leng < length_min || !best )
+        {
+          best = curr;
+          cv_prev = prev;
+          length_min = leng;
+        }
       }
     }
 
@@ -656,8 +660,11 @@ void DelaunayTriangulator::smoothPt(OrEdge * edge, double coef)
 // Self-intersections
 bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
 {
-  EdgesSet_const items, used;
+  EdgesSet_const items, used, polyline;
   octree_->collect(edge->rect(), items);
+
+  const Vec3f & ep0 = container_.verts().at(edge->org()).p();
+  const Vec3f & ep1 = container_.verts().at(edge->dst()).p();
 
   for (EdgesSet_const::iterator i = items.begin(); i != items.end(); ++i)
   {
@@ -669,7 +676,10 @@ bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
 
     // is triangle
     if ( e->next()->next()->next() != e )
+    {
+      polyline.insert(e);
       continue;
+    }
 
     // don't search triangle twice
     used.insert( e->next() );
@@ -683,12 +693,79 @@ bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
       continue;
     }
 
-    const Vec3f & ep0 = container_.verts().at(edge->org()).p();
-    const Vec3f & ep1 = container_.verts().at(edge->dst()).p();
-
     const Vec3f & tp0 = container_.verts().at(tr.x).p();
     const Vec3f & tp1 = container_.verts().at(tr.y).p();
     const Vec3f & tp2 = container_.verts().at(tr.z).p();
+
+    Vec3f ip;
+    if ( iMath::edge_tri_isect(ep0, ep1, tp0, tp1, tp2, ip) )
+      return true;
+  }
+
+  if ( polyline.empty() )
+    return false;
+
+  for (EdgesSet_const::iterator i = polyline.begin(); i != polyline.end(); ++i)
+  {
+    const OrEdge * from = *i;
+    if ( used.find(from) != used.end() )
+      continue;
+
+    for (const OrEdge * curr = from->next(); curr != from && curr->next() != from; curr = curr->next())
+    {
+      used.insert(curr);
+
+      Triangle tr(from->org(), curr->org(), curr->dst());
+
+      const Vec3f & tp0 = container_.verts().at(tr.x).p();
+      const Vec3f & tp1 = container_.verts().at(tr.y).p();
+      const Vec3f & tp2 = container_.verts().at(tr.z).p();
+
+      if ( tr.x == edge->org() || tr.x == edge->dst() ||
+           tr.y == edge->org() || tr.y == edge->dst() ||
+           tr.z == edge->org() || tr.z == edge->dst() )
+      {
+        continue;
+      }
+
+      Vec3f ip;
+      if ( iMath::edge_tri_isect(ep0, ep1, tp0, tp1, tp2, ip) )
+        return true;
+    }
+  }
+
+  return false;
+}
+
+bool DelaunayTriangulator::selfIsect(const Triangle & tr) const
+{
+  const Vec3f & tp0 = container_.verts().at(tr.x).p();
+  const Vec3f & tp1 = container_.verts().at(tr.y).p();
+  const Vec3f & tp2 = container_.verts().at(tr.z).p();
+
+  Rect3f rc;
+  rc.add(tp0);
+  rc.add(tp1);
+  rc.add(tp2);
+
+  EdgesSet_const items, used;
+  octree_->collect(rc, items);
+
+  for (EdgesSet_const::iterator i = items.begin(); i != items.end(); ++i)
+  {
+    const OrEdge * e = *i;
+    if ( used.find(e) != used.end() )
+      continue;
+
+    if ( tr.x == e->org() || tr.x == e->dst() ||
+         tr.y == e->org() || tr.y == e->dst() ||
+         tr.z == e->org() || tr.z == e->dst() )
+    {
+      continue;
+    }
+
+    const Vec3f & ep0 = container_.verts().at(e->org()).p();
+    const Vec3f & ep1 = container_.verts().at(e->dst()).p();
 
     Vec3f ip;
     if ( iMath::edge_tri_isect(ep0, ep1, tp0, tp1, tp2, ip) )

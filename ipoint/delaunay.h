@@ -48,6 +48,7 @@ private:
 
   // self-intersections
   bool selfIsect(OrEdge * edge) const;
+  bool selfIsect(const Triangle & tr) const;
 
   double edgeLength_;
   double rotateThreshold_;
