@@ -39,21 +39,13 @@ void DelaunayTriangulator::triangulate(Triangles & tris)
 {
   save3d("D:\\Scenes\\3dpad\\intrusion.txt", "Mesh", "Boundary");
 
-  for (int n = 0; n < 20; ++n)
-  {
-    if ( makeDelaunay() == 0 )
-      break;
-  }
+  makeDelaunayRep(true);
 
   save3d("D:\\Scenes\\3dpad\\intrusion_delaunay.txt", "Mesh", "Boundary");
 
   split();
 
-  for (int n = 0; n < 20; ++n)
-  {
-    if ( makeDelaunay() == 0 )
-      break;
-  }
+  makeDelaunayRep(false);
 
   smooth(0.2, 1);
 
@@ -97,8 +89,8 @@ void DelaunayTriangulator::split()
     int index = (int)container_.verts().size();
     container_.verts().push_back(v);
 
-    octree_->remove(e);
-    octree_->remove(adj);
+    //octree_->remove(e);
+    //octree_->remove(adj);
 
     if ( !e->splitEdge(index) )
       throw std::runtime_error("couldn't split edge");
@@ -111,14 +103,14 @@ void DelaunayTriangulator::split()
     OrEdge * b2 = a2->get_adjacent();
     OrEdge * c2 = b2->next();
 
-    octree_->add(e);
-    octree_->add(adj);
-    octree_->add(a1);
-    octree_->add(b1);
-    octree_->add(c1);
-    octree_->add(a2);
-    octree_->add(b2);
-    octree_->add(c2);
+    //octree_->add(e);
+    //octree_->add(adj);
+    //octree_->add(a1);
+    //octree_->add(b1);
+    //octree_->add(c1);
+    //octree_->add(a2);
+    //octree_->add(b2);
+    //octree_->add(c2);
 
     if ( c2 != c1->get_adjacent() )
       throw std::runtime_error("wrong topology");
@@ -161,7 +153,27 @@ void DelaunayTriangulator::split()
   }
 }
 
-int DelaunayTriangulator::makeDelaunay()
+void DelaunayTriangulator::makeDelaunayRep(bool checkSI)
+{
+  int num = std::numeric_limits<int>::max(), repsN = 0;
+  for ( ;; )
+  {
+    int n = makeDelaunay(checkSI);
+    if ( n == 0 )
+      break;
+
+    if ( n >= num )
+      repsN++;
+    else
+      repsN = 0;
+
+    num = n;
+    if ( repsN > 3 )
+      break;
+  }
+}
+
+int DelaunayTriangulator::makeDelaunay(bool checkSI)
 {
   EdgesSet to_delanay, to_exclude;
   for (OrEdgesList_shared::iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
@@ -179,18 +191,25 @@ int DelaunayTriangulator::makeDelaunay()
   for (EdgesSet::iterator i = to_delanay.begin(); i != to_delanay.end(); ++i)
   {
     OrEdge * e = *i;
-    if ( !needRotate(e) )
+    if ( !needRotate(e, checkSI) )
       continue;
 
     OrEdge * a = e->get_adjacent();
-    octree_->remove(e);
-    octree_->remove(a);
+
+    if ( checkSI )
+    {
+      octree_->remove(e);
+      octree_->remove(a);
+    }
 
     if ( e->rotate() )
       num++;
 
-    octree_->add(e);
-    octree_->add(a);
+    if ( checkSI )
+    {
+      octree_->add(e);
+      octree_->add(a);
+    }
   }
 
   return num;
@@ -205,18 +224,18 @@ void DelaunayTriangulator::makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_spl
     OrEdge * e = *i;
     to_delanay.erase(i);
 
-    if ( !needRotate(e) )
+    if ( !needRotate(e, false) )
       continue;
 
-    OrEdge * a = e->get_adjacent();
-    octree_->remove(e);
-    octree_->remove(a);
+    //OrEdge * a = e->get_adjacent();
+    //octree_->remove(e);
+    //octree_->remove(a);
 
     if ( !e->rotate() )
       continue;
 
-    octree_->add(e);
-    octree_->add(a);
+    //octree_->add(e);
+    //octree_->add(a);
 
     OrEdge * rnext = e->next();
     OrEdge * rprev = e->prev();
@@ -328,7 +347,7 @@ bool DelaunayTriangulator::getSplitPoint(const OrEdge * edge, Vertex & v) const
   return true;
 }
 
-bool DelaunayTriangulator::needRotate(const OrEdge * edge) const
+bool DelaunayTriangulator::needRotate(const OrEdge * edge, bool checkSI) const
 {
   if ( !edge )
     return false;
@@ -370,11 +389,22 @@ bool DelaunayTriangulator::needRotate(const OrEdge * edge) const
     return false;
 
   // self-intersections
-  int i0 = edge->next()->dst();
-  int i1 = adj->next()->dst();
-  OrEdge temp(i0, i1, const_cast<EdgesContainer*>(&container_));
-  if ( selfIsect(&temp) )
-    return false;
+  if ( checkSI )
+  {
+    int i0 = edge->next()->dst();
+    int i1 = adj->next()->dst();
+    OrEdge temp(i0, i1, const_cast<EdgesContainer*>(&container_));
+    if ( selfIsect(&temp) )
+      return false;
+
+    Triangle tr0(edge->org(), i0, i1);
+    if ( selfIsect(tr0) )
+      return false;
+
+    Triangle tr1(edge->dst(), i1, i0);
+    if ( selfIsect(tr1) )
+      return false;
+  }
 
   return true;
 }
@@ -386,6 +416,9 @@ void DelaunayTriangulator::postbuild(Triangles & tris) const
   {
     const OrEdge * e = i->get();
     if ( used.find(e) != used.end() )
+      continue;
+
+    if ( e->next()->next()->next() != e )
       continue;
 
     Triangle t = e->tri();
@@ -444,7 +477,14 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
 
     // 1 triangle
     if ( cv_prev == cv_edge->next()->next() )
+    {
+      //Triangle tr(cv_edge->org(), cv_edge->dst(), cv_edge->next()->next()->dst());
+      //if ( selfIsect(tr) )
+      //{
+      //  save3d("D:\\Scenes\\3dpad\\tri_isect.txt", "Mesh", "Boundary");
+      //}
       continue;
+    }
 
     OrEdge * ir_edge = findIntrudeEdge(cv_edge);
     if ( ir_edge )
@@ -475,6 +515,15 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
       if ( !cv_next )
          throw std::runtime_error("wrong topology given");;
 
+      
+      //Triangle tr(cv_edge->org(), cv_edge->dst(), cv_next->dst());
+      //bool found = selfIsect(tr);
+      //if ( found )
+      //{
+      //  save3d("D:\\Scenes\\3dpad\\tri_isect2.txt", "Mesh", "Boundary");
+      //  findIntrudeEdge(cv_edge);
+      //}
+
       OrEdge * e = container_.new_edge(cv_edge->org(), cv_next->dst());
       OrEdge * a = e->create_adjacent();
 
@@ -487,6 +536,10 @@ void DelaunayTriangulator::intrusionPoint(OrEdge * from)
       cv_next->set_next(a);
       a->set_next(cv_edge);
 
+      //if ( found )
+      //{
+      //  save3d("D:\\Scenes\\3dpad\\tri_isect2.txt", "Mesh", "Boundary");
+      //}
       elist.push_back(e);
     }
   }
@@ -501,8 +554,8 @@ bool DelaunayTriangulator::isEdgeConvex(const OrEdge * edge) const
   const Vertex & cur = container_.verts().at( edge->dst() );
   const Vertex & nxt = container_.verts().at( edge->next()->dst() );
 
-  Vec3f dir = (pre.p() - cur.p()) ^ (nxt.p() - cur.p());
-  Vec3f cw = cur.n() + pre.n() + nxt.n();
+  Vec3f dir = (nxt.p() - cur.p()) ^ (pre.p() - cur.p());
+  Vec3f cw = cur.n();// + pre.n() + nxt.n();
 
   return cw * dir > 0;
 }
@@ -529,7 +582,7 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from, OrEdge *& cv_prev)
     if ( !isEdgeConvex(curr) )
     {
       Triangle tr(curr->org(), curr->dst(), curr->next()->dst());
-      if ( !selfIsect(tr) )
+      //if ( !selfIsect(tr) )
       {
         double leng = (nxt.p() - pre.p()).length();
         if ( leng < length_min || !best )
@@ -557,53 +610,175 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from, OrEdge *& cv_prev)
   return best;
 }
 
+void writeTri(const char * fname, const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, const Vec3f & q0, const Vec3f & q1)
+{
+  std::ofstream ofs(fname);
+
+  ofs << "Mesh \"Tri\" {\n";
+
+  ofs << "  Wireframe {\n";
+  ofs << "    ( true )\n";
+  ofs << "  }\n";
+
+  ofs << "  Shaded {\n";
+  ofs << "    ( true )\n";
+  ofs << "  }\n";
+
+  ofs << "  DefaultColor {\n";
+  ofs << "    ( 0, 1, 0 )\n";
+  ofs << "  }\n";
+
+  ofs << "  Coords {\n";
+  ofs << "    ( " << p0.x << ", " << p0.y << ", " << p0.z << " )\n";
+  ofs << "    ( " << p1.x << ", " << p1.y << ", " << p1.z << " )\n";
+  ofs << "    ( " << p2.x << ", " << p2.y << ", " << p2.z << " )\n";
+  ofs << "  }\n";
+
+
+  ofs << "  Faces {\n";
+  ofs << "    ( 0, 1, 2 )\n";
+  ofs << "  }\n";
+
+  ofs << "}\n";
+
+  ofs << "Edges \"Proj\" {\n";
+
+  ofs << "  DefaultColor {\n";
+  ofs << "    (0, 0, 1)\n";
+  ofs << "  }\n";
+
+  ofs << "  { (" << q0.x << ", " << q0.y << ", " << q0.z << ") (" << q1.x << ", " << q1.y << ", " << q1.z <<") (0, 0, 1) }\n";
+
+  ofs << "}\n";
+}
+
+void DelaunayTriangulator::writeSomething(const char * fname, const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, std::vector<int> & pline)
+{
+  std::ofstream ofs(fname);
+
+  ofs << "Mesh \"Tri\" {\n";
+
+  ofs << "  Wireframe {\n";
+  ofs << "    ( true )\n";
+  ofs << "  }\n";
+
+  ofs << "  Shaded {\n";
+  ofs << "    ( true )\n";
+  ofs << "  }\n";
+
+  ofs << "  DefaultColor {\n";
+  ofs << "    ( 0, 1, 0 )\n";
+  ofs << "  }\n";
+
+  ofs << "  Coords {\n";
+  ofs << "    ( " << p0.x << ", " << p0.y << ", " << p0.z << " )\n";
+  ofs << "    ( " << p1.x << ", " << p1.y << ", " << p1.z << " )\n";
+  ofs << "    ( " << p2.x << ", " << p2.y << ", " << p2.z << " )\n";
+  ofs << "  }\n";
+
+
+  ofs << "  Faces {\n";
+  ofs << "    ( 0, 1, 2 )\n";
+  ofs << "  }\n";
+
+  ofs << "}\n";
+
+
+  ofs << "Polyline \"pline\" {\n";
+
+  ofs << "  DefaultColor {\n";
+  ofs << "    ( 1,0,0 )\n";
+  ofs << "  }\n";
+
+  ofs << "  DrawPoints {\n";
+  ofs << "    (true)\n";
+  ofs << "  }\n";
+
+  ofs << "  DrawLines {\n";
+  ofs << "    (true)\n";
+  ofs << "  }\n";
+
+  ofs << "  Points {\n";
+
+  for (size_t i = 0; i < pline.size(); ++i)
+  {
+    size_t j = pline[i];
+    const Vec3f & p = container_.verts().at(j).p();
+    ofs << "    (" << p.x << ", " << p.y << ", " << p.z << ")\n";
+  }
+  ofs << "  }\n";
+
+  ofs << "}\n";
+}
+
 OrEdge * DelaunayTriangulator::findIntrudeEdge(OrEdge * cv_edge)
 {
   if ( !cv_edge )
     return 0;
 
   const Vertex & pre = container_.verts().at( cv_edge->org() );
-  const Vertex & cur = container_.verts().at( cv_edge->dst() );
+  const Vertex & cvv = container_.verts().at( cv_edge->dst() );
   const Vertex & nxt = container_.verts().at( cv_edge->next()->dst() );
 
-  Vec3f nor = pre.n() + cur.n() + nxt.n();
+  Vec3f nor = pre.n() + cvv.n() + nxt.n();
 
   bool outside = false;
-  Vec3f vdist_cur = dist_to_line(pre.p(), nxt.p(), cur.p(), outside);
-  double dist_cur = vdist_cur.length();
+  Vec3f vdist_cvv = dist_to_line(pre.p(), nxt.p(), cvv.p(), outside);
+  double dist_cvv = vdist_cvv.length();
   double dist = 0;
 
+  std::vector<int> pline;
   OrEdge * ir_edge = 0;
   for ( OrEdge * curr = cv_edge->next()->next();
           curr != cv_edge && curr->next() != cv_edge;
           curr = curr->next())
   {
-    // intrude edge couldn't be convex
-    if ( isEdgeConvex(curr) )
-      continue;
+    //// intrude edge couldn't be convex
+    //if ( isEdgeConvex(curr) )
+    //  continue;
+
+    pline.push_back(curr->dst());
 
     const Vertex & iv = container_.verts().at( curr->dst() );
     Vec3f vd = dist_to_line(pre.p(), nxt.p(), iv.p(), outside);
-    bool inside = inside_tri(pre.p(), cur.p(), nxt.p(), iv.p());
 
-    if ( !inside || vd*vdist_cur <= 0 )
+    // project intrusion point to triangle plane
+    Vec3f N = (cvv.p() - pre.p()) ^ (nxt.p() - pre.p());
+    if ( N.length() < iMath::err )
       continue;
+    N.normalize();
+    double D = -cvv.p() * N;
+    double ivd = iv.p() * N + D;
+    Vec3f ivp = iv.p() - N*ivd;
+    double x = ivp*N+D;
+
+    bool inside = inside_tri(pre.p(), cvv.p(), nxt.p(), ivp);
+
+    if ( !inside )
+      continue;
+
+    if ( vd*vdist_cvv <= 0 )
+      continue;
+
+   // writeTri("d:\\scenes\\3dpad\\tri.txt", pre.p(), cvv.p(), nxt.p(), iv.p(), ivp);
 
     double d = vd.length();
-    double dist_icv = (iv.p()-cur.p()).length();
-    if ( d <= dist || d >= dist_cur || dist_icv > dist_cur*2.0 )
+    double dist_icv = (iv.p()-cvv.p()).length();
+    if ( d <= dist || d >= dist_cvv || dist_icv > 2.0*dist_cvv )
       continue;
 
-    if ( nor*iv.n() < 0 )
-      continue;
+    //if ( nor*iv.n() < 0 )
+    //  continue;
 
-    OrEdge temp(cv_edge->dst(), curr->dst(), &container_);
-    if ( selfIsect(&temp) )
-      continue;
+    //OrEdge temp(cv_edge->dst(), curr->dst(), &container_);
+    //if ( selfIsect(&temp) )
+    //  continue;
 
     ir_edge = curr;
     dist = d;
   }
+
+  //writeSomething("d:\\scenes\\3dpad\\something.txt", pre.p(), cvv.p(), nxt.p(), pline);
 
   return ir_edge;
 }
@@ -667,6 +842,7 @@ bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
   const Vec3f & ep1 = container_.verts().at(edge->dst()).p();
 
   for (EdgesSet_const::iterator i = items.begin(); i != items.end(); ++i)
+  //for (OrEdgesList_shared::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
   {
     const OrEdge * e = *i;
     if ( used.find(e) != used.end() )
@@ -686,6 +862,8 @@ bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
     used.insert( e->next()->next() );
 
     Triangle tr = e->tri();
+
+    // touches
     if ( tr.x == edge->org() || tr.x == edge->dst() ||
          tr.y == edge->org() || tr.y == edge->dst() ||
          tr.z == edge->org() || tr.z == edge->dst() )
@@ -721,6 +899,7 @@ bool DelaunayTriangulator::selfIsect(OrEdge * edge) const
       const Vec3f & tp1 = container_.verts().at(tr.y).p();
       const Vec3f & tp2 = container_.verts().at(tr.z).p();
 
+      // touches
       if ( tr.x == edge->org() || tr.x == edge->dst() ||
            tr.y == edge->org() || tr.y == edge->dst() ||
            tr.z == edge->org() || tr.z == edge->dst() )
@@ -748,15 +927,21 @@ bool DelaunayTriangulator::selfIsect(const Triangle & tr) const
   rc.add(tp1);
   rc.add(tp2);
 
+  OrEdge tedges[3] = { OrEdge(tr.x, tr.y, const_cast<EdgesContainer*>(&container_)),
+    OrEdge(tr.y, tr.z, const_cast<EdgesContainer*>(&container_)),
+    OrEdge(tr.z, tr.x, const_cast<EdgesContainer*>(&container_)) };
+
   EdgesSet_const items, used;
   octree_->collect(rc, items);
 
   for (EdgesSet_const::iterator i = items.begin(); i != items.end(); ++i)
+  //for (OrEdgesList_shared::const_iterator i = container_.edges().begin(); i != container_.edges().end(); ++i)
   {
     const OrEdge * e = *i;
     if ( used.find(e) != used.end() )
       continue;
 
+    // touches
     if ( tr.x == e->org() || tr.x == e->dst() ||
          tr.y == e->org() || tr.y == e->dst() ||
          tr.z == e->org() || tr.z == e->dst() )
@@ -770,6 +955,38 @@ bool DelaunayTriangulator::selfIsect(const Triangle & tr) const
     Vec3f ip;
     if ( iMath::edge_tri_isect(ep0, ep1, tp0, tp1, tp2, ip) )
       return true;
+
+    // not a triangle
+    if ( e->next()->next()->next() != e )
+      continue;
+
+    used.insert(e->next());
+    used.insert(e->next()->next());
+
+    Triangle etr = e->tri();
+
+    const Vec3f & q0 = container_.verts().at(etr.x).p();
+    const Vec3f & q1 = container_.verts().at(etr.y).p();
+    const Vec3f & q2 = container_.verts().at(etr.z).p();
+
+    for (int j = 0; j < 3; ++j)
+    {
+      OrEdge & oe = tedges[j];
+
+      // touches
+      if ( etr.x == oe.org() || etr.x == oe.dst() ||
+           etr.y == oe.org() || etr.y == oe.dst() ||
+           etr.z == oe.org() || etr.z == oe.dst() )
+      {
+        continue;
+      }
+
+      const Vec3f & x0 = container_.verts().at(e->org()).p();
+      const Vec3f & x1 = container_.verts().at(e->dst()).p();
+
+      if ( iMath::edge_tri_isect(x0, x1, q0, q1, q2, ip) )
+        return true;
+    }
   }
 
   return false;
@@ -854,6 +1071,23 @@ void DelaunayTriangulator::save3d(const char * fname, const char * meshName, con
 
     ofs << "}\n";
   }
+
+  ofs << "Edges \"Normals\" {\n";
+
+  ofs << "  DefaultColor {\n";
+  ofs << "    (0, 0, 1)\n";
+  ofs << "  }\n";
+
+  for (size_t i = 0; i < boundary_.size(); ++i)
+  {
+    size_t j = boundary_[i];
+    const Vec3f & p = verts.at(j).p();
+    Vec3f n = verts.at(j).n();
+    n = p + n*edgeLength_;
+    ofs << "  { (" << p.x << ", " << p.y << ", " << p.z << ") (" << n.x << ", " << n.y << ", " << n.z <<") (0, 0, 1) }\n";
+  }
+
+  ofs << "}\n";
 }
 
 

@@ -17,16 +17,18 @@ public:
   void triangulate(Triangles & tris);
   void save3d(const char * fname, const char * meshName, const char * plineName) const;
   void saveBoundary(const char * fname) const;
+  void writeSomething(const char * fname, const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, std::vector<int> &);
 
 private:
 
   Vec3f calcPt(const Vec3f & p0, const Vec3f & p1, const Vec3f & n0, const Vec3f & n1, double t) const;
 
   void prebuild();
-  bool needRotate(const OrEdge * e) const;
+  bool needRotate(const OrEdge * e, bool checkSI) const;
 
   // returns number of edges rotated
-  int  makeDelaunay();
+  int  makeDelaunay(bool checkSI);
+  void makeDelaunayRep(bool checkSI);
 
   void makeDelaunay(EdgesSet & to_delanay, EdgesSet & to_split, EdgesSet & to_exclude);
   bool getSplitPoint(const OrEdge * , Vertex & ) const;
