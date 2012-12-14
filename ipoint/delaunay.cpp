@@ -554,7 +554,7 @@ bool DelaunayTriangulator::isEdgeConvex(const OrEdge * edge) const
   const Vertex & cur = container_.verts().at( edge->dst() );
   const Vertex & nxt = container_.verts().at( edge->next()->dst() );
 
-  Vec3f dir = (nxt.p() - cur.p()) ^ (pre.p() - cur.p());
+  Vec3f dir = (pre.p() - cur.p()) ^ (nxt.p() - cur.p());
   Vec3f cw = cur.n();// + pre.n() + nxt.n();
 
   return cw * dir > 0;
@@ -579,7 +579,7 @@ OrEdge * DelaunayTriangulator::findConvexEdge(OrEdge * from, OrEdge *& cv_prev)
     const Vertex & pre = container_.verts().at( curr->org() );
     const Vertex & nxt = container_.verts().at( next->dst() );
 
-    if ( !isEdgeConvex(curr) )
+    if ( isEdgeConvex(curr) )
     {
       Triangle tr(curr->org(), curr->dst(), curr->next()->dst());
       //if ( !selfIsect(tr) )
