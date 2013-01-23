@@ -172,6 +172,11 @@ struct Rect3f
     return Vec3f(width(), height(), depth());
   }
 
+  Vec3f diagonal() const
+  {
+    return vmax - vmin;
+  }
+
   Vec3f origin() const
   {
     return vmin;

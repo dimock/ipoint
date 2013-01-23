@@ -15,7 +15,7 @@ public:
   virtual ~DelaunayTriangulator();
 
   void triangulate(Triangles & tris);
-  void save3d(const char * fname, const char * meshName, const char * plineName) const;
+  void save3d(const char * fname, const char * meshName, const char * plineName, const char * edgesName) const;
   void saveBoundary(const char * fname) const;
   void writeSomething(const char * fname, const Vec3f & p0, const Vec3f & p1, const Vec3f & p2, std::vector<int> &);
 
@@ -39,24 +39,29 @@ private:
 
   // edge->org() is convex point
   OrEdge * findConvexEdge(OrEdge * from, OrEdge *& cv_prev);
+  OrEdge * findConvexEdgeAlt(OrEdge * from, OrEdge *& cv_prev);
 
   bool isEdgeConvex(const OrEdge * edge) const;
 
   // edge->dst() is intrude point
   OrEdge * findIntrudeEdge(OrEdge * cv_edge);
 
-  void smooth(double coef, int itersN);
-  void smoothPt(OrEdge * edge, double coef);
+  void smooth(int itersN);
+  void smoothPt(OrEdge * edge);
 
   // self-intersections
   bool selfIsect(OrEdge * edge) const;
   bool selfIsect(const Triangle & tr) const;
+  bool haveCrossSections(const OrEdge * ) const;
 
   double edgeLength_;
   double rotateThreshold_;
   double splitThreshold_;
   double thinThreshold_;
+  double convexThreshold_;
+  double dimensionThreshold_;
 
+  Rect3f rect_;
   EdgesContainer container_;
   std::vector<size_t> boundary_;
 
