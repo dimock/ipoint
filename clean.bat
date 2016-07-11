@@ -1,1 +1,0 @@
-del /S /F *.pch *.pdb *.obj *.sbr *.exp *.lib *.idb *.ncb *.opt *.bsc *.res *.ilk *.scc *.suo *.user

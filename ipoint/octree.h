@@ -70,7 +70,7 @@ private:
 
     if ( node->level_ >= depth_ )
     {
-      for (std::list<const T*>::iterator i = node->array_.begin(); i != node->array_.end(); ++i)
+      for (typename std::list<const T*>::iterator i = node->array_.begin(); i != node->array_.end(); ++i)
         items.insert(*i);
 
       return;
@@ -111,7 +111,7 @@ private:
 
     if ( !node->array_.empty() )
     {
-      std::list<const T*>::iterator iter = std::find(node->array_.begin(), node->array_.end(), t);
+      typename std::list<const T*>::iterator iter = std::find(node->array_.begin(), node->array_.end(), t);
       if ( iter != node->array_.end() )
         node->array_.erase(iter);
       return;

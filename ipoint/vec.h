@@ -12,6 +12,7 @@
 #include <math.h>
 #include <vector>
 #include <set>
+#include <cstddef>
 
 /************************************************************************/
 /* 3D Vector                                                            */

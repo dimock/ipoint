@@ -10,7 +10,6 @@
 #pragma once
 
 #include "vec.h"
-#include <xutility>
 #include "float.h"
 
 #define MinSizes 1e-10

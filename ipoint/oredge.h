@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include "rect.h"
 #include "icommon.h"
 #include <list>

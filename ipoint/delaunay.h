@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include "oredge.h"
 #include "octree.h"
 
@@ -65,5 +66,5 @@ private:
   EdgesContainer container_;
   std::vector<size_t> boundary_;
 
-  boost::shared_ptr<OcTree<OrEdge>> octree_;
+  boost::shared_ptr< OcTree<OrEdge> > octree_;
 };
